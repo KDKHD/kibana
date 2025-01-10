@@ -47,6 +47,7 @@ export const StreamComment = ({
     reader,
     isError,
   });
+
   useEffect(() => {
     setIsStreaming(isStreaming);
   }, [isStreaming, setIsStreaming]);

@@ -65,7 +65,7 @@ export const CustomCitationParser: Plugin = function CustomCitationParser() {
         body += char;
       }
 
-      return body;
+      return "";
     }
 
     const citationLabel = readArg('[', ']');
@@ -87,6 +87,10 @@ export const CustomCitationParser: Plugin = function CustomCitationParser() {
       });
     }
 
+    if (!citationLink || !citationLabel) {
+      return false
+    }
+
     if (silent) {
       return true;
     }
@@ -94,7 +98,7 @@ export const CustomCitationParser: Plugin = function CustomCitationParser() {
     now.column += START_SIGNAL.length + 1;
     now.offset += START_SIGNAL.length + 1;
 
-    if (!citationLink || !citationLabel) {
+    /* if (!citationLink || !citationLabel) {
       // Partial citation
       return eat(value)({
         type: 'customCitation',
@@ -103,7 +107,7 @@ export const CustomCitationParser: Plugin = function CustomCitationParser() {
         citationNumber: citationNumber++,
         incomplete: true,
       } as CustomCitationNode);
-    }
+    } */
 
     const citationElement: CitationElement = `!{citation[${citationLabel}](${citationLink})}`;
 
