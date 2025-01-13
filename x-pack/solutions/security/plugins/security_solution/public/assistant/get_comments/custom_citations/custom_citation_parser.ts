@@ -6,22 +6,19 @@
  */
 
 import type { RemarkTokenizer } from '@elastic/eui';
-import type { CitationElement } from '@kbn/elastic-assistant-common/impl/citations';
 import type { Plugin } from 'unified';
 import type { Node } from 'unist';
 
 export interface CustomCitationNode extends Node {
   type: 'customCitation';
-  citationLink: string;
-  citationLable: string;
+  citationId: string;
   citationNumber?: number;
-  incomplete?: boolean;
 }
 
-const START_SIGNAL = '!{citation';
+const START_SIGNAL = '!reference';
 
 /**
- * Parses `!{citation[citationLabel](citationLink)` into CustomCitationNode
+ * Parses `!{citation[citationLabel](citationLink)}` into CustomCitationNode
  */
 export const CustomCitationParser: Plugin = function CustomCitationParser() {
   const Parser = this.Parser;
@@ -39,7 +36,7 @@ export const CustomCitationParser: Plugin = function CustomCitationParser() {
 
     const nextChar = value[START_SIGNAL.length];
 
-    if (nextChar !== '[') return false;
+    if (nextChar !== '{') return false;
 
     let index = START_SIGNAL.length;
 
@@ -68,26 +65,19 @@ export const CustomCitationParser: Plugin = function CustomCitationParser() {
       return "";
     }
 
-    const citationLabel = readArg('[', ']');
-    const citationLink = readArg('(', ')');
+    const citationId = readArg('{', '}');
 
     const now = eat.now();
 
-    if (!citationLabel) {
-      this.file.info('No citation lable found', {
+    if (!citationId) {
+      this.file.info('No citation id found', {
         line: now.line,
         column: now.column + START_SIGNAL.length + 1,
       });
     }
 
-    if (!citationLink) {
-      this.file.info('No citation link found', {
-        line: now.line,
-        column: now.column + START_SIGNAL.length + 3 + citationLabel.length,
-      });
-    }
-
-    if (!citationLink || !citationLabel) {
+    
+    if (!citationId) {
       return false
     }
 
@@ -109,12 +99,11 @@ export const CustomCitationParser: Plugin = function CustomCitationParser() {
       } as CustomCitationNode);
     } */
 
-    const citationElement: CitationElement = `!{citation[${citationLabel}](${citationLink})}`;
+    const citationElement = `!reference{${citationId}}`;
 
     return eat(citationElement)({
       type: 'customCitation',
-      citationLink,
-      citationLable: citationLabel,
+      citationId: citationId,
       citationNumber: citationNumber++,
     } as CustomCitationNode);
   };

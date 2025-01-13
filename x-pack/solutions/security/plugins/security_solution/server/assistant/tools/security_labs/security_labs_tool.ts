@@ -10,8 +10,8 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from '@kbn/zod';
 import type { AssistantTool, AssistantToolParams } from '@kbn/elastic-assistant-plugin/server';
 import { SECURITY_LABS_RESOURCE } from '@kbn/elastic-assistant-plugin/server/routes/knowledge_base/constants';
-import { getCitationElement } from '@kbn/elastic-assistant-common';
 import { APP_UI_ID } from '../../../../common';
+import { LinkReference } from '@kbn/elastic-assistant-common/impl/content_references';
 
 const toolDetails = {
   description:
@@ -50,13 +50,9 @@ export const SECURITY_LABS_KNOWLEDGE_BASE_TOOL: AssistantTool = {
         // TODO: Token pruning
         const result = JSON.stringify(docs).substring(0, 20000);
 
-        const citationElement = getCitationElement({
-          citationLable: 'Elastic Security Labs content',
-          citationLink:
-            '/app/management/kibana/securityAiAssistantManagement?tab=knowledge_base&entry_search_term=securityLabsId',
-        });
+        const linkReference = params.contentReferencesStore.add(p => new LinkReference(p.id, 'Elastic Security Labs content', '/app/management/kibana/securityAiAssistantManagement?tab=knowledge_base&entry_search_term=securityLabsId'))
 
-        return `${result}\n\ncitationElement: "${citationElement}"`;
+        return `${result}\n\nreferenceElement: "${linkReference.getReferenceElement()}"`;
       },
       tags: ['security-labs', 'knowledge-base'],
       // TODO: Remove after ZodAny is fixed https://github.com/langchain-ai/langchainjs/blob/main/langchain-core/src/tools.ts

@@ -11,18 +11,16 @@ const IF_YOU_DONT_KNOW_THE_ANSWER = 'Do not answer questions unrelated to Elasti
 export const KNOWLEDGE_HISTORY =
   'If available, use the Knowledge History provided to try and answer the question. If not provided, you can try and query for additional knowledge via the KnowledgeBaseRetrievalTool.';
 
-export const INCLUDE_CITATIONS = `When a citationElement is provided, include it to reference the response. Citations are indicated in the text using the citationElement at the end of the respective scentence, after the full stop. For example:
+export const INCLUDE_CITATIONS = `When a referenceElement is provided, include it in the response. References are indicated in the text using the referenceElement at the end of the respective scentence, after the full stop. For example:
 
 Template:  
 \`\`\`
-<cited sentence>.<citationElement>
+<referenced sentence>.<referenceElement>
 \`\`\`
 
 Example: 
 \`\`\`
-This vulnerability emerged due to issues in Log4j version 2.15.0.!{{citation[Log4J docs](/source/path)}} This vulnerability impacted various companies running Java services.!{{citation[Vulnerability report](/source/path)}}
-
-Citation URL paths should never be modified.
+This vulnerability emerged due to issues in Log4j version 2.15.0.!reference{{HMCxq}} This vulnerability impacted various companies running Java services.!reference{{prSit}}
 \`\`\`
 `;
 

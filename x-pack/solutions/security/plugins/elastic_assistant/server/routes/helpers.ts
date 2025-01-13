@@ -21,6 +21,8 @@ import {
   Replacements,
   replaceAnonymizedValuesWithOriginalValues,
   DEFEND_INSIGHTS_TOOL_ID,
+  ContentReferencesStore,
+  MessageMetadata,
 } from '@kbn/elastic-assistant-common';
 import { ILicense } from '@kbn/licensing-plugin/server';
 import { i18n } from '@kbn/i18n';
@@ -100,10 +102,12 @@ export const getMessageFromRawResponse = ({
   rawContent,
   isError,
   traceData,
+  metadata
 }: {
   rawContent?: string;
   traceData?: TraceData;
   isError?: boolean;
+  metadata?: MessageMetadata
 }): Message => {
   const dateTimeString = new Date().toISOString();
   if (rawContent) {
@@ -113,6 +117,7 @@ export const getMessageFromRawResponse = ({
       timestamp: dateTimeString,
       isError,
       traceData,
+      metadata
     };
   } else {
     return {
@@ -170,6 +175,7 @@ export interface AppendAssistantMessageToConversationParams {
   conversationId: string;
   isError?: boolean;
   traceData?: Message['traceData'];
+  metadata?: Message['metadata'];
 }
 export const appendAssistantMessageToConversation = async ({
   conversationsDataClient,
@@ -178,6 +184,7 @@ export const appendAssistantMessageToConversation = async ({
   conversationId,
   isError = false,
   traceData = {},
+  metadata
 }: AppendAssistantMessageToConversationParams) => {
   const conversation = await conversationsDataClient.getConversation({ id: conversationId });
   if (!conversation) {
@@ -194,6 +201,7 @@ export const appendAssistantMessageToConversation = async ({
         }),
         traceData,
         isError,
+        metadata
       }),
     ],
   });
@@ -236,6 +244,7 @@ export interface LangChainExecuteParams {
   response: KibanaResponseFactory;
   responseLanguage?: string;
   systemPrompt?: string;
+  contentReferencesStore: ContentReferencesStore,
 }
 export const langChainExecute = async ({
   messages,
@@ -259,6 +268,7 @@ export const langChainExecute = async ({
   responseLanguage,
   isStream = true,
   systemPrompt,
+  contentReferencesStore
 }: LangChainExecuteParams) => {
   // Fetch any tools registered by the request's originating plugin
   const pluginName = getPluginNameFromRequest({
@@ -316,6 +326,7 @@ export const langChainExecute = async ({
     request,
     replacements,
     responseLanguage,
+    contentReferencesStore,
     size: request.body.size,
     systemPrompt,
     telemetry,

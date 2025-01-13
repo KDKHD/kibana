@@ -10,9 +10,9 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from '@kbn/zod';
 import { requestHasRequiredAnonymizationParams } from '@kbn/elastic-assistant-plugin/server/lib/langchain/helpers';
 import type { AssistantTool, AssistantToolParams } from '@kbn/elastic-assistant-plugin/server';
-import { getCitationElement } from '@kbn/elastic-assistant-common';
 import { getAlertsCountQuery } from './get_alert_counts_query';
 import { APP_UI_ID } from '../../../../common';
+import { LinkReference } from '@kbn/elastic-assistant-common/impl/content_references';
 
 export interface AlertCountsToolParams extends AssistantToolParams {
   alertsIndexPattern: string;
@@ -40,15 +40,12 @@ export const ALERT_COUNTS_TOOL: AssistantTool = {
         const query = getAlertsCountQuery(alertsIndexPattern);
         const result = await esClient.search<SearchResponse>(query);
 
-        const citationElement = getCitationElement({
-          citationLable: 'Alerts',
-          citationLink: '/app/security/alerts',
-        });
+        const linkReference = params.contentReferencesStore.add(p => new LinkReference(p.id, 'Alerts', '/app/security/alerts'))
 
-        return `Below are all relevant results in JSON format and their citationElement:
+        return `Below are all relevant results in JSON format and their referenceElement:
         ${JSON.stringify(result)}
 
-        citationElement: "${citationElement}"
+        referenceElement: "${linkReference.getReferenceElement()}"
         `;
       },
       tags: ['alerts', 'alerts-count'],

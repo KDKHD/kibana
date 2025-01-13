@@ -14,7 +14,9 @@ import {
   API_VERSIONS,
   ExecuteConnectorRequestBody,
   Message,
+  ContentReferencesStore,
   Replacements,
+  buildMessageMetadata,
 } from '@kbn/elastic-assistant-common';
 import { buildRouteValidationWithZod } from '@kbn/elastic-assistant-common/impl/schemas/common';
 import { INVOKE_ASSISTANT_ERROR_EVENT } from '../lib/telemetry/event_based_telemetry';
@@ -110,12 +112,17 @@ export const postActionsConnectorExecuteRoute = (
             await assistantContext.getAIAssistantConversationsDataClient();
           const promptsDataClient = await assistantContext.getAIAssistantPromptsDataClient();
 
+
+          const contentReferencesStore = new ContentReferencesStore()
+          
           onLlmResponse = async (
             content: string,
             traceData: Message['traceData'] = {},
             isError = false
           ): Promise<void> => {
             if (conversationsDataClient && conversationId) {
+              const metadata = buildMessageMetadata({contentReferencesStore, content})
+
               await appendAssistantMessageToConversation({
                 conversationId,
                 conversationsDataClient,
@@ -123,6 +130,7 @@ export const postActionsConnectorExecuteRoute = (
                 replacements: latestReplacements,
                 isError,
                 traceData,
+                metadata
               });
             }
           };
@@ -154,6 +162,7 @@ export const postActionsConnectorExecuteRoute = (
             response,
             telemetry,
             systemPrompt,
+            contentReferencesStore,
             ...(productDocsAvailable ? { llmTasks: ctx.elasticAssistant.llmTasks } : {}),
           });
         } catch (err) {

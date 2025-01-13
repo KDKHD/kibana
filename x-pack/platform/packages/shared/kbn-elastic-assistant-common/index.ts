@@ -13,6 +13,10 @@ export type { AssistantFeatures } from './impl/capabilities';
 
 export { getAnonymizedValue } from './impl/data_anonymization/get_anonymized_value';
 
+export { ContentReferencesStore } from './impl/content_references'
+
+export { buildMessageMetadata } from './impl/message_metadata'
+
 export {
   getIsDataAnonymizable,
   isAllowed,

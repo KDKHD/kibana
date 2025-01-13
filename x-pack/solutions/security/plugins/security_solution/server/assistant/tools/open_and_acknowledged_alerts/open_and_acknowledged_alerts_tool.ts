@@ -9,7 +9,6 @@ import type { SearchResponse } from '@elastic/elasticsearch/lib/api/types';
 import type { Replacements } from '@kbn/elastic-assistant-common';
 import {
   getAnonymizedValue,
-  getCitationElement,
   getOpenAndAcknowledgedAlertsQuery,
   getRawDataOrDefault,
   sizeIsOutOfRange,
@@ -21,6 +20,7 @@ import { z } from '@kbn/zod';
 import type { AssistantTool, AssistantToolParams } from '@kbn/elastic-assistant-plugin/server';
 import { ALERT_DETAILS_REDIRECT_PATH } from '../../../../common/constants';
 import { APP_PATH, APP_UI_ID } from '../../../../common';
+import { AlertReference } from '@kbn/elastic-assistant-common/impl/content_references';
 
 const relativeAlertPath = (alertId: string | undefined) => {
   if (!alertId) return '';
@@ -96,10 +96,7 @@ export const OPEN_AND_ACKNOWLEDGED_ALERTS_TOOL: AssistantTool = {
                 rawData: getRawDataOrDefault(hit.fields),
               }),
               {
-                citationElement: getCitationElement({
-                  citationLable: 'Alert',
-                  citationLink: relativeAlertPath(hit._id),
-                }),
+                referenceElement: params.contentReferencesStore.add(p => new AlertReference(p.id, hit._id!)).getReferenceElement(),
               }
             )
           )
@@ -110,7 +107,7 @@ export const OPEN_AND_ACKNOWLEDGED_ALERTS_TOOL: AssistantTool = {
   },
 };
 
-function enrichResult(result: string, enrichment: Record<string, string>) {
+function enrichResult(result: string, enrichment: Record<string, string | undefined>) {
   return [result, Object.keys(enrichment).map((key) => `${key},${enrichment[key]}`)]
     .flat()
     .join('\n');

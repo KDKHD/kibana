@@ -11,7 +11,7 @@ import { BaseMessage } from '@langchain/core/messages';
 import { Logger } from '@kbn/logging';
 import { KibanaRequest, KibanaResponseFactory, ResponseHeaders } from '@kbn/core-http-server';
 import type { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
-import { ExecuteConnectorRequestBody, Message, Replacements } from '@kbn/elastic-assistant-common';
+import { ExecuteConnectorRequestBody, Message, ContentReferencesStore, Replacements } from '@kbn/elastic-assistant-common';
 import { StreamResponseWithHeaders } from '@kbn/ml-response-stream/server';
 import { PublicMethodsOf } from '@kbn/utility-types';
 import type { InferenceServerStart } from '@kbn/inference-plugin/server';
@@ -63,6 +63,7 @@ export interface AgentExecutorParams<T extends boolean> {
   telemetryParams?: TelemetryParams;
   traceOptions?: TraceOptions;
   responseLanguage?: string;
+  contentReferencesStore: ContentReferencesStore
 }
 
 export interface StaticReturnType {

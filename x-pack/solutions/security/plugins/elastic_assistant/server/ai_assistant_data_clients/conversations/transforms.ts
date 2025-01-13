@@ -34,14 +34,14 @@ export const transformESSearchToConversations = (
         summary: conversationSchema.summary,
         ...(conversationSchema.api_config
           ? {
-              apiConfig: {
-                connectorId: conversationSchema.api_config.connector_id,
-                actionTypeId: conversationSchema.api_config.action_type_id,
-                defaultSystemPromptId: conversationSchema.api_config.default_system_prompt_id,
-                model: conversationSchema.api_config.model,
-                provider: conversationSchema.api_config.provider,
-              },
-            }
+            apiConfig: {
+              connectorId: conversationSchema.api_config.connector_id,
+              actionTypeId: conversationSchema.api_config.action_type_id,
+              defaultSystemPromptId: conversationSchema.api_config.default_system_prompt_id,
+              model: conversationSchema.api_config.model,
+              provider: conversationSchema.api_config.provider,
+            },
+          }
           : {}),
         excludeFromLastConversationStorage:
           conversationSchema.exclude_from_last_conversation_storage,
@@ -53,26 +53,27 @@ export const transformESSearchToConversations = (
             // always return anonymized data from the client
             content: conversationSchema.replacements
               ? replaceOriginalValuesWithUuidValues({
-                  messageContent: message.content,
-                  replacements: conversationSchema.replacements?.reduce(
-                    (acc: Record<string, string>, r) => {
-                      acc[r.uuid] = r.value;
-                      return acc;
-                    },
-                    {}
-                  ),
-                })
+                messageContent: message.content,
+                replacements: conversationSchema.replacements?.reduce(
+                  (acc: Record<string, string>, r) => {
+                    acc[r.uuid] = r.value;
+                    return acc;
+                  },
+                  {}
+                ),
+              })
               : message.content,
             ...(message.is_error ? { isError: message.is_error } : {}),
             ...(message.reader ? { reader: message.reader } : {}),
             role: message.role,
+            ...(message.metadata ? { metadata: message.metadata } : {}),
             ...(message.trace_data
               ? {
-                  traceData: {
-                    traceId: message.trace_data?.trace_id,
-                    transactionId: message.trace_data?.transaction_id,
-                  },
-                }
+                traceData: {
+                  traceId: message.trace_data?.trace_id,
+                  transactionId: message.trace_data?.transaction_id,
+                },
+              }
               : {}),
           })) ?? [],
         updatedAt: conversationSchema.updated_at,
@@ -113,14 +114,14 @@ export const transformESToConversations = (
       summary: conversationSchema.summary,
       ...(conversationSchema.api_config
         ? {
-            apiConfig: {
-              actionTypeId: conversationSchema.api_config.action_type_id,
-              connectorId: conversationSchema.api_config.connector_id,
-              defaultSystemPromptId: conversationSchema.api_config.default_system_prompt_id,
-              model: conversationSchema.api_config.model,
-              provider: conversationSchema.api_config.provider,
-            },
-          }
+          apiConfig: {
+            actionTypeId: conversationSchema.api_config.action_type_id,
+            connectorId: conversationSchema.api_config.connector_id,
+            defaultSystemPromptId: conversationSchema.api_config.default_system_prompt_id,
+            model: conversationSchema.api_config.model,
+            provider: conversationSchema.api_config.provider,
+          },
+        }
         : {}),
       excludeFromLastConversationStorage: conversationSchema.exclude_from_last_conversation_storage,
       isDefault: conversationSchema.is_default,
@@ -138,11 +139,11 @@ export const transformESToConversations = (
           role: message.role,
           ...(message.trace_data
             ? {
-                traceData: {
-                  traceId: message.trace_data?.trace_id,
-                  transactionId: message.trace_data?.transaction_id,
-                },
-              }
+              traceData: {
+                traceId: message.trace_data?.trace_id,
+                transactionId: message.trace_data?.transaction_id,
+              },
+            }
             : {}),
         })) ?? [],
       updatedAt: conversationSchema.updated_at,

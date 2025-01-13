@@ -10,8 +10,9 @@ import { z } from '@kbn/zod';
 import type { AssistantTool, AssistantToolParams } from '@kbn/elastic-assistant-plugin/server';
 import type { AIAssistantKnowledgeBaseDataClient } from '@kbn/elastic-assistant-plugin/server/ai_assistant_data_clients/knowledge_base';
 import { Document } from 'langchain/document';
-import { getCitationElement } from '@kbn/elastic-assistant-common';
+import { ContentReferencesStore } from '@kbn/elastic-assistant-common';
 import { APP_UI_ID } from '../../../../common';
+import { LinkReference } from '@kbn/elastic-assistant-common/impl/content_references';
 
 export interface KnowledgeBaseRetrievalToolParams extends AssistantToolParams {
   kbDataClient: AIAssistantKnowledgeBaseDataClient;
@@ -53,7 +54,7 @@ export const KNOWLEDGE_BASE_RETRIEVAL_TOOL: AssistantTool = {
           required: false,
         });
 
-        const enrichedDocuments = docs.map(enrichDocument);
+        const enrichedDocuments = docs.map(doc => enrichDocument(doc, params.contentReferencesStore));
 
         return JSON.stringify(enrichedDocuments);
       },
@@ -63,15 +64,13 @@ export const KNOWLEDGE_BASE_RETRIEVAL_TOOL: AssistantTool = {
   },
 };
 
-function enrichDocument(document: Document<Record<string, string>>) {
+function enrichDocument(document: Document<Record<string, string>>, contentReferencesStore: ContentReferencesStore) {
+  const linkReference = contentReferencesStore.add(p => new LinkReference(p.id, document.metadata.name, `/app/management/kibana/securityAiAssistantManagement?tab=knowledge_base&entry_search_term=${document.id}`))
   return new Document({
     ...document,
     metadata: {
       ...document.metadata,
-      citationElement: getCitationElement({
-        citationLable: document.metadata.name,
-        citationLink: `/app/management/kibana/securityAiAssistantManagement?tab=knowledge_base&entry_search_term=${document.id}`,
-      }),
+      referenceElement: linkReference.getReferenceElement(),
     },
   });
 }

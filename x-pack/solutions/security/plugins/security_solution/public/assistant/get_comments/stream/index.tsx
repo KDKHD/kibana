@@ -13,6 +13,7 @@ import { StopGeneratingButton } from './buttons/stop_generating_button';
 import { RegenerateResponseButton } from './buttons/regenerate_response_button';
 import { MessagePanel } from './message_panel';
 import { MessageText } from './message_text';
+import { MessageMetadata } from '@kbn/elastic-assistant-common';
 
 interface Props {
   abortStream: () => void;
@@ -26,6 +27,7 @@ interface Props {
   regenerateMessage: () => void;
   setIsStreaming: (isStreaming: boolean) => void;
   transformMessage: (message: string) => ContentMessage;
+  metadata?: MessageMetadata
 }
 
 export const StreamComment = ({
@@ -40,6 +42,7 @@ export const StreamComment = ({
   regenerateMessage,
   setIsStreaming,
   transformMessage,
+  metadata
 }: Props) => {
   const { error, isLoading, isStreaming, pendingMessage, setComplete } = useStream({
     refetchCurrentConversation,
@@ -47,7 +50,6 @@ export const StreamComment = ({
     reader,
     isError,
   });
-
   useEffect(() => {
     setIsStreaming(isStreaming);
   }, [isStreaming, setIsStreaming]);
@@ -109,6 +111,7 @@ export const StreamComment = ({
           content={message}
           index={index}
           loading={isAnythingLoading}
+          contentReferences={metadata?.content_references}
         />
       }
       error={error ? new Error(error) : undefined}

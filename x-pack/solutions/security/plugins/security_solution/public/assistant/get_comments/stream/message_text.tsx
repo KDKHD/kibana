@@ -27,12 +27,14 @@ import { customCodeBlockLanguagePlugin } from '../custom_codeblock/custom_codebl
 import { CustomCodeBlock } from '../custom_codeblock/custom_code_block';
 import { CustomCitation } from '../custom_citations/custom_citation';
 import { CustomCitationParser } from '../custom_citations/custom_citation_parser';
+import { ContentReferences } from '@kbn/elastic-assistant-common';
 
 interface Props {
   content: string;
   index: number;
   loading: boolean;
   ['data-test-subj']?: string;
+  contentReferences?: ContentReferences
 }
 
 const ANIMATION_TIME = 1;
@@ -101,7 +103,10 @@ const loadingCursorPlugin = () => {
   };
 };
 
-const getPluginDependencies = () => {
+type GetPluginDependenciesProps = {
+  contentReferences?: ContentReferences
+}
+const getPluginDependencies = ({contentReferences}: GetPluginDependenciesProps) => {
   const parsingPlugins = getDefaultEuiMarkdownParsingPlugins();
 
   const processingPlugins = getDefaultEuiMarkdownProcessingPlugins();
@@ -112,13 +117,13 @@ const getPluginDependencies = () => {
     ...components,
     cursor: Cursor,
     customCitation: (props) => {
+
+      console.log(contentReferences)
+    
+      const tempt = contentReferences?.[props.citationId]
+
       return (
-        <CustomCitation
-          citationLable={props.citationLable}
-          citationNumber={props.citationNumber}
-          citationLink={props.citationLink}
-          incomplete={props.incomplete}
-        />
+        <div>{`${tempt?.id}:${tempt?.type}:${tempt?.citationLable}`}</div>
       );
     },
     customCodeBlock: (props) => {
@@ -161,12 +166,14 @@ const getPluginDependencies = () => {
   };
 };
 
-export function MessageText({ loading, content, index, 'data-test-subj': dataTestSubj }: Props) {
+export function MessageText({ loading, content, index, 'data-test-subj': dataTestSubj, contentReferences }: Props) {
   const containerClassName = css`
     overflow-wrap: anywhere;
   `;
 
-  const { parsingPluginList, processingPluginList } = getPluginDependencies();
+  const { parsingPluginList, processingPluginList } = getPluginDependencies({
+    contentReferences
+  });
 
   return (
     <EuiText className={containerClassName} data-test-subj={dataTestSubj}>

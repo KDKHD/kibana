@@ -85,6 +85,8 @@ export const findUserConversationsRoute = (router: ElasticAssistantPluginRouter)
           });
 
           if (result) {
+            console.log(JSON.stringify(result.data, null, 2))
+
             return response.ok({
               body: {
                 perPage: result.perPage,

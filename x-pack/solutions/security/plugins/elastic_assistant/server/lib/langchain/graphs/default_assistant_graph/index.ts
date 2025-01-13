@@ -50,6 +50,7 @@ export const callAssistantGraph: AgentExecutor<true | false> = async ({
   telemetryParams,
   traceOptions,
   responseLanguage = 'English',
+  contentReferencesStore
 }) => {
   const logger = parentLogger.get('defaultAssistantGraph');
   const isOpenAI = llmType === 'openai' && !isOssModel;
@@ -114,6 +115,7 @@ export const callAssistantGraph: AgentExecutor<true | false> = async ({
     request,
     size,
     telemetry,
+    contentReferencesStore
   };
 
   const tools: StructuredTool[] = assistantTools.flatMap(
@@ -124,6 +126,7 @@ export const callAssistantGraph: AgentExecutor<true | false> = async ({
   if (isEnabledKnowledgeBase) {
     const kbTools = await dataClients?.kbDataClient?.getAssistantTools({
       esClient,
+      contentReferencesStore
     });
     if (kbTools) {
       tools.push(...kbTools);

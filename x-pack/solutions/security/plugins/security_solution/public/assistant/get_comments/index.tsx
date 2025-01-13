@@ -141,7 +141,6 @@ export const getComments: GetAssistantMessages = ({
       const isLastComment = index === currentConversation.messages.length - 1;
       const isUser = message.role === 'user';
       const replacements = currentConversation.replacements;
-
       const messageProps = {
         timelineAvatar: isUser ? (
           <UserAvatar />
@@ -182,6 +181,7 @@ export const getComments: GetAssistantMessages = ({
               regenerateMessage={regenerateMessageOfConversation}
               setIsStreaming={setIsStreaming}
               transformMessage={transformMessage}
+              metadata={message.metadata}
             />
           ),
         };
@@ -206,6 +206,7 @@ export const getComments: GetAssistantMessages = ({
             refetchCurrentConversation={refetchCurrentConversation}
             setIsStreaming={setIsStreaming}
             transformMessage={transformMessage}
+            metadata={message.metadata}
           />
         ),
       };

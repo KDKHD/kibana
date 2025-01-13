@@ -34,6 +34,35 @@ export const TraceData = z.object({
 });
 
 /**
+ * Message Metadata
+ */
+export type ContentReference = z.infer<typeof ContentReference>;
+export const ContentReference = z.object({
+  /**
+   * Identifies a ContentReference uniquely within a message
+   */
+  id: z.string(),
+  /**
+   * Specifies the type of ContentReference
+   */
+  type: z.enum(["LinkReference", 'AlertReference'])
+});
+
+export const ContentReferences = z.record(z.string(), ContentReference)
+export type ContentReferences = z.infer<typeof ContentReferences>;
+
+/**
+ * Message Metadata
+ */
+export type MessageMetadata = z.infer<typeof MessageMetadata>;
+export const MessageMetadata = z.object({
+  /**
+   * 
+   */
+  content_references: ContentReferences
+});
+
+/**
  * Replacements object used to anonymize/deanomymize messsages
  */
 export type Replacements = z.infer<typeof Replacements>;
@@ -103,6 +132,10 @@ export const Message = z.object({
    * trace Data
    */
   traceData: TraceData.optional(),
+  /**
+   * Metadata
+   */
+  metadata: MessageMetadata.optional()
 });
 
 export type ApiConfig = z.infer<typeof ApiConfig>;

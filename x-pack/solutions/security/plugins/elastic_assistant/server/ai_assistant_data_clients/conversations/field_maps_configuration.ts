@@ -97,6 +97,16 @@ export const conversationsFieldMap: FieldMap = {
     array: false,
     required: false,
   },
+  'messages.metadata': {
+    type: 'object',
+    array: false,
+    required: false,
+  },
+  'messages.metadata.content_references': {
+    type: 'flattened',
+    array: false,
+    required: false,
+  },
   replacements: {
     type: 'object',
     array: false,

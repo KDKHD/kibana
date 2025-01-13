@@ -11,8 +11,9 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { errors } from '@elastic/elasticsearch';
 import { QueryDslQueryContainer, SearchRequest } from '@elastic/elasticsearch/lib/api/types';
 import { AuthenticatedUser } from '@kbn/core-security-common';
-import { getCitationElement, IndexEntry } from '@kbn/elastic-assistant-common';
+import { IndexEntry } from '@kbn/elastic-assistant-common';
 import { ElasticsearchClient, Logger } from '@kbn/core/server';
+import { LinkReference, ContentReferencesStore } from '@kbn/elastic-assistant-common/impl/content_references';
 
 export const isModelAlreadyExistsError = (error: Error) => {
   return (
@@ -47,21 +48,21 @@ export const getKBVectorSearchQuery = ({
 }): QueryDslQueryContainer => {
   const resourceFilter = kbResource
     ? [
-        {
-          term: {
-            kb_resource: kbResource,
-          },
+      {
+        term: {
+          kb_resource: kbResource,
         },
-      ]
+      },
+    ]
     : [];
   const requiredFilter = required
     ? [
-        {
-          term: {
-            required,
-          },
+      {
+        term: {
+          required,
         },
-      ]
+      },
+    ]
     : [];
 
   const userFilter = {
@@ -109,8 +110,8 @@ export const getKBVectorSearchQuery = ({
   let semanticTextFilter:
     | Array<{ semantic: { field: string; query: string } }>
     | Array<{
-        text_expansion: { 'vector.tokens': { model_id: string; model_text: string } };
-      }> = [];
+      text_expansion: { 'vector.tokens': { model_id: string; model_text: string } };
+    }> = [];
 
   if (query) {
     semanticTextFilter = [
@@ -141,21 +142,23 @@ export const getStructuredToolForIndexEntry = ({
   esClient,
   logger,
   elserId,
+  contentReferencesStore
 }: {
   indexEntry: IndexEntry;
   esClient: ElasticsearchClient;
   logger: Logger;
   elserId: string;
+  contentReferencesStore: ContentReferencesStore
 }): DynamicStructuredTool => {
   const inputSchema = indexEntry.inputSchema?.reduce((prev, input) => {
     const fieldType =
       input.fieldType === 'string'
         ? z.string()
         : input.fieldType === 'number'
-        ? z.number()
-        : input.fieldType === 'boolean'
-        ? z.boolean()
-        : z.any();
+          ? z.number()
+          : input.fieldType === 'boolean'
+            ? z.boolean()
+            : z.any();
     return { ...prev, [input.fieldName]: fieldType.describe(input.description) };
   }, {});
 
@@ -236,14 +239,11 @@ export const getStructuredToolForIndexEntry = ({
         logger.debug(() => `Similarity Search Results:\n ${JSON.stringify(result)}`);
         logger.debug(() => `Similarity Text Extract Results:\n ${JSON.stringify(kbDocs)}`);
 
-        const citationElement = getCitationElement({
-          citationLable: indexEntry.name,
-          citationLink: `/app/management/kibana/securityAiAssistantManagement?tab=knowledge_base&entry_search_term=${indexEntry.id}`,
-        });
+        const linkReference = contentReferencesStore.add(p => new LinkReference(p.id, indexEntry.name, `/app/management/kibana/securityAiAssistantManagement?tab=knowledge_base&entry_search_term=${indexEntry.id}`))
 
         return `###\n Below are all relevant documents in JSON format:
 ${JSON.stringify(kbDocs)}
-citationElement: ${citationElement}
+referenceElement: ${linkReference.getReferenceElement()}
 ###
         `;
       } catch (e) {

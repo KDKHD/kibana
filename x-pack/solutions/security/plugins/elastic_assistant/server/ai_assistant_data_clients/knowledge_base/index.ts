@@ -21,6 +21,7 @@ import {
   KnowledgeBaseEntryCreateProps,
   KnowledgeBaseEntryResponse,
   Metadata,
+  ContentReferencesStore,
 } from '@kbn/elastic-assistant-common';
 import pRetry from 'p-retry';
 import { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
@@ -643,8 +644,10 @@ export class AIAssistantKnowledgeBaseDataClient extends AIAssistantDataClient {
    */
   public getAssistantTools = async ({
     esClient,
+    contentReferencesStore
   }: {
     esClient: ElasticsearchClient;
+    contentReferencesStore: ContentReferencesStore
   }): Promise<StructuredTool[]> => {
     const user = this.options.currentUser;
     if (user == null) {
@@ -685,6 +688,7 @@ export class AIAssistantKnowledgeBaseDataClient extends AIAssistantDataClient {
                 esClient,
                 logger: this.options.logger,
                 elserId,
+                contentReferencesStore
               });
             })
         );
