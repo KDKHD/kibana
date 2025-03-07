@@ -4,44 +4,13 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-
-import { BaseMessage } from '@langchain/core/messages';
-import { AgentStep } from '@langchain/core/agents';
 import type { Logger } from '@kbn/logging';
-import { ConversationResponse } from '@kbn/elastic-assistant-common';
 import { PublicMethodsOf } from '@kbn/utility-types';
 import { ActionsClient } from '@kbn/actions-plugin/server';
 import { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
+import { DefaultAssistantGraphState } from './state';
 
-export interface GraphInputs {
-  connectorId: string;
-  conversationId?: string;
-  llmType?: string;
-  isStream?: boolean;
-  isOssModel?: boolean;
-  input: string;
-  provider: string;
-  responseLanguage?: string;
-}
-
-export interface AgentState {
-  input: string;
-  messages: BaseMessage[]; // messages is a list of messages that were created during the graph execution
-  chatHistory: BaseMessage[]; // chat history is a list of messages that have been sent and received in the chat prior to the graph execution
-  chatTitle: string;
-  lastNode: string;
-  hasRespondStep: boolean;
-  isStream: boolean;
-  isOssModel: boolean;
-  llmType: string;
-  provider: string;
-  responseLanguage: string;
-  connectorId: string;
-  conversation: ConversationResponse | undefined;
-  conversationId: string;
-  formattedTime: string;
-  steps: AgentStep[];
-}
+export type GraphInputs = Required<Pick<Partial<typeof DefaultAssistantGraphState.State>, 'connectorId' | 'provider' | 'messages'>> & Partial<typeof DefaultAssistantGraphState.State>;
 
 export interface NodeParamsBase {
   actionsClient: PublicMethodsOf<ActionsClient>;

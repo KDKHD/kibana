@@ -54,6 +54,7 @@ import { getLangChainMessages } from '../lib/langchain/helpers';
 import { AIAssistantConversationsDataClient } from '../ai_assistant_data_clients/conversations';
 import { ElasticAssistantRequestHandlerContext, GetElser } from '../types';
 import { callAssistantGraph } from '../lib/langchain/graphs/default_assistant_graph';
+import { BaseMessage } from '@langchain/core/messages';
 
 interface GetPluginNameFromRequestParams {
   request: KibanaRequest;
@@ -224,7 +225,7 @@ export const appendAssistantMessageToConversation = async ({
 };
 
 export interface LangChainExecuteParams {
-  messages: Array<Pick<Message, 'content' | 'role'>>;
+  newMessages: Array<Pick<Message, 'content' | 'role'>>;
   replacements: Replacements;
   isStream?: boolean;
   onNewReplacements: (newReplacements: Replacements) => void;
@@ -257,7 +258,7 @@ export interface LangChainExecuteParams {
   systemPrompt?: string;
 }
 export const langChainExecute = async ({
-  messages,
+  newMessages,
   replacements,
   onNewReplacements,
   abortSignal,
@@ -298,9 +299,6 @@ export const langChainExecute = async ({
   // get a scoped esClient for assistant memory
   const esClient = context.core.elasticsearch.client.asCurrentUser;
 
-  // convert the assistant messages to LangChain messages:
-  const langChainMessages = getLangChainMessages(messages);
-
   const anonymizationFieldsDataClient =
     await assistantContext.getAIAssistantAnonymizationFieldsDataClient();
   const conversationsDataClient = await assistantContext.getAIAssistantConversationsDataClient();
@@ -314,6 +312,24 @@ export const langChainExecute = async ({
     conversationsDataClient: conversationsDataClient ?? undefined,
     kbDataClient,
   };
+
+  // Reconstruct the conversation messages
+  let langChainMessages: BaseMessage[] = []
+
+  if(conversationId && conversationsDataClient){
+    const conversation = await conversationsDataClient.getConversation({ id: conversationId });
+    const updatedConversation = await conversationsDataClient.appendConversationMessages({
+      existingConversation: conversation!,
+      messages: newMessages.map((m) => ({
+        content: m.content,
+        role: m.role,
+        timestamp: new Date().toISOString(),
+      })),
+    })
+    if (conversation) {
+      langChainMessages = langChainMessages.concat(getLangChainMessages(updatedConversation?.messages ?? []));
+    }
+  }
 
   const isKnowledgeBaseInstalled = await getIsKnowledgeBaseInstalled(kbDataClient);
   // Shared executor params

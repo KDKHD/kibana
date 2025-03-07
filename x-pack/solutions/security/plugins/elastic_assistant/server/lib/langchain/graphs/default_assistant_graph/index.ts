@@ -101,8 +101,6 @@ export const callAssistantGraph: AgentExecutor<true | false> = async ({
     ? transformESSearchToAnonymizationFields(anonymizationFieldsRes.data)
     : undefined;
 
-  const latestMessage = langChainMessages.slice(-1); // the last message
-
   // Check if KB is available (not feature flag related)
   const isEnabledKnowledgeBase =
     (await dataClients?.kbDataClient?.isInferenceEndpointExists()) ?? false;
@@ -228,21 +226,25 @@ export const callAssistantGraph: AgentExecutor<true | false> = async ({
     replacements,
     // some chat models (bedrock) require a signal to be passed on agent invoke rather than the signal passed to the chat model
     ...(llmType === 'bedrock' ? { signal: abortSignal } : {}),
-    getFormattedTime: () =>
-      getFormattedTime({
-        screenContextTimezone: screenContext?.timeZone,
-        uiSettingsDateFormatTimezone,
-      }),
   });
+
+  const conversation = dataClients?.conversationsDataClient && conversationId ? await dataClients?.conversationsDataClient?.getConversation({ id: conversationId }) : undefined;
+
   const inputs: GraphInputs = {
     responseLanguage,
     conversationId,
+    conversation: conversation ?? undefined,
+    chatTitle: conversation?.title,
     connectorId,
     llmType,
     isStream,
     isOssModel,
-    input: latestMessage[0]?.content as string,
+    messages: langChainMessages,
     provider: provider ?? '',
+    formattedTime: getFormattedTime({
+      screenContextTimezone: screenContext?.timeZone,
+      uiSettingsDateFormatTimezone,
+    })
   };
 
   if (isStream) {

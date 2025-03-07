@@ -244,9 +244,8 @@ export const invokeGraph = async ({
       tags: traceOptions?.tags ?? [],
     });
 
-    const lastMessage = result.messages[result.messages.length - 1];
-
-    const output = lastMessage.content as string;
+    const lastMessage = result.messages.at(-1);
+    const output: string = lastMessage?.content as string ?? '';
     const conversationId = result.conversation?.id;
 
     if (onLlmResponse) {

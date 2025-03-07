@@ -11,12 +11,14 @@ import { AIMessage, BaseMessage } from '@langchain/core/messages';
 import { removeContentReferences } from '@kbn/elastic-assistant-common';
 import { promptGroupId } from '../../../../prompt/local_prompt_object';
 import { getPrompt, promptDictionary } from '../../../../prompt';
-import { AgentState, NodeParamsBase } from '../types';
+import { NodeParamsBase } from '../types';
 import { NodeType } from '../constants';
 import { AIAssistantKnowledgeBaseDataClient } from '../../../../../ai_assistant_data_clients/knowledge_base';
+import { DefaultAssistantGraphState } from '../state';
+import { Command } from '@langchain/langgraph';
 
 export interface RunAgentParams extends NodeParamsBase {
-  state: AgentState;
+  state: typeof DefaultAssistantGraphState.State;
   config?: RunnableConfig;
   agentRunnable: AgentRunnableSequence;
   kbDataClient?: AIAssistantKnowledgeBaseDataClient;
@@ -44,34 +46,37 @@ export async function runAgent({
   agentRunnable,
   config,
   kbDataClient,
-}: RunAgentParams): Promise<Partial<AgentState>> {
+}: RunAgentParams) {
   logger.debug(() => `${NodeType.AGENT}: Node state:\n${JSON.stringify(state, null, 2)}`);
 
   const knowledgeHistory = await kbDataClient?.getRequiredKnowledgeBaseDocumentEntries();
   const userPrompt =
     state.llmType === 'gemini'
       ? await getPrompt({
-          actionsClient,
-          connectorId: state.connectorId,
-          promptId: promptDictionary.userPrompt,
-          promptGroupId: promptGroupId.aiAssistant,
-          provider: 'gemini',
-          savedObjectsClient,
-        })
+        actionsClient,
+        connectorId: state.connectorId,
+        promptId: promptDictionary.userPrompt,
+        promptGroupId: promptGroupId.aiAssistant,
+        provider: 'gemini',
+        savedObjectsClient,
+      })
       : '';
+
+  const messages = state.messages ?? [];
+  if (messages.length > 0) {
+    messages[messages.length - 1].content = `${userPrompt}${messages[messages.length - 1].content}`;
+  }
+
   const result = await agentRunnable
     .withConfig({ tags: [AGENT_NODE_TAG], signal: config?.signal })
     .invoke(
       {
         ...state,
-        knowledge_history: `${KNOWLEDGE_HISTORY_PREFIX}\n${
-          knowledgeHistory?.length
+        knowledge_history: `${KNOWLEDGE_HISTORY_PREFIX}\n${knowledgeHistory?.length
             ? JSON.stringify(knowledgeHistory.map((e) => e.text))
             : NO_KNOWLEDGE_HISTORY
-        }`,
-        // prepend any user prompt (gemini)
-        input: `${userPrompt}${state.input}`,
-        chat_history: sanitizeChatHistory(state.chatHistory),
+          }`,
+        messages,
       },
       config
     );
@@ -90,10 +95,12 @@ export async function runAgent({
     newMessages.push(aiMessage);
   }
 
-  return {
-    messages: newMessages,
-    lastNode: NodeType.AGENT,
-  };
+  return new Command({
+    update: {
+      messages: newMessages,
+      lastNode: NodeType.AGENT,
+    }
+  })
 }
 
 /**

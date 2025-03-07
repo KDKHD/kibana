@@ -6,8 +6,8 @@
  */
 
 import { NodeType } from '../constants';
-import { AgentState } from '../types';
 import { NEW_CHAT } from '../../../../../routes/helpers';
+import { DefaultAssistantGraphState } from '../state';
 
 /*
  * We use a single router endpoint for common conditional edges.
@@ -15,7 +15,7 @@ import { NEW_CHAT } from '../../../../../routes/helpers';
  * or to a new node that's been added to the graph.
  * More routers could always be added later when needed.
  */
-export function stepRouter(state: AgentState): string {
+export function stepRouter(state: typeof DefaultAssistantGraphState.State): string {
   switch (state.lastNode) {
     case NodeType.AGENT:
       const { messages } = state;
@@ -29,15 +29,14 @@ export function stepRouter(state: AgentState): string {
       }
       return state.hasRespondStep ? NodeType.RESPOND : NodeType.END;
 
-    case NodeType.GET_PERSISTED_CONVERSATION:
+    case NodeType.MODEL_INPUT:
+      if (!state.conversationId) {
+        return NodeType.AGENT
+      }
       if (state.conversation?.title?.length && state.conversation?.title !== NEW_CHAT) {
         return NodeType.PERSIST_CONVERSATION_CHANGES;
       }
       return NodeType.GENERATE_CHAT_TITLE;
-
-    case NodeType.MODEL_INPUT:
-      return state.conversationId ? NodeType.GET_PERSISTED_CONVERSATION : NodeType.AGENT;
-
     default:
       return NodeType.END;
   }

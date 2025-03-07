@@ -16,18 +16,17 @@ import { PublicMethodsOf } from '@kbn/utility-types';
 import { ActionsClient } from '@kbn/actions-plugin/server';
 import { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
-import { AgentState, NodeParamsBase } from './types';
+import { NodeParamsBase } from './types';
 import { AssistantDataClients } from '../../executors/types';
 
 import { stepRouter } from './nodes/step_router';
 import { modelInput } from './nodes/model_input';
 import { runAgent } from './nodes/run_agent';
 import { generateChatTitle } from './nodes/generate_chat_title';
-import { getPersistedConversation } from './nodes/get_persisted_conversation';
 import { persistConversationChanges } from './nodes/persist_conversation_changes';
 import { respond } from './nodes/respond';
 import { NodeType } from './constants';
-import { getStateAnnotation } from './state';
+import { DefaultAssistantGraphState } from './state';
 
 export const DEFAULT_ASSISTANT_GRAPH_ID = 'Default Security Assistant Graph';
 
@@ -41,7 +40,6 @@ export interface GetDefaultAssistantGraphParams {
   signal?: AbortSignal;
   tools: StructuredTool[];
   replacements: Replacements;
-  getFormattedTime?: () => string;
 }
 
 export type DefaultAssistantGraph = ReturnType<typeof getDefaultAssistantGraph>;
@@ -57,7 +55,6 @@ export const getDefaultAssistantGraph = ({
   signal,
   tools,
   replacements,
-  getFormattedTime,
 }: GetDefaultAssistantGraphParams) => {
   try {
     // Default node parameters
@@ -67,23 +64,14 @@ export const getDefaultAssistantGraph = ({
       savedObjectsClient,
     };
 
-    const stateAnnotation = getStateAnnotation({ getFormattedTime });
-
     const toolNodeForGraph = new ToolNode(tools);
 
     // Put together a new graph using default state from above
-    const graph = new StateGraph(stateAnnotation)
-      .addNode(NodeType.GET_PERSISTED_CONVERSATION, (state: AgentState) =>
-        getPersistedConversation({
-          ...nodeParams,
-          state,
-          conversationsDataClient: dataClients?.conversationsDataClient,
-        })
-      )
-      .addNode(NodeType.GENERATE_CHAT_TITLE, (state: AgentState) =>
+    const graph = new StateGraph(DefaultAssistantGraphState)
+      .addNode(NodeType.GENERATE_CHAT_TITLE, (state) =>
         generateChatTitle({ ...nodeParams, state, model: createLlmInstance() })
       )
-      .addNode(NodeType.PERSIST_CONVERSATION_CHANGES, (state: AgentState) =>
+      .addNode(NodeType.PERSIST_CONVERSATION_CHANGES, (state) =>
         persistConversationChanges({
           ...nodeParams,
           state,
@@ -91,7 +79,7 @@ export const getDefaultAssistantGraph = ({
           replacements,
         })
       )
-      .addNode(NodeType.AGENT, (state: AgentState) =>
+      .addNode(NodeType.AGENT, (state) =>
         runAgent({
           ...nodeParams,
           config: { signal },
@@ -101,22 +89,19 @@ export const getDefaultAssistantGraph = ({
         })
       )
       .addNode(NodeType.TOOLS, toolNodeForGraph)
-      .addNode(NodeType.RESPOND, (state: AgentState) =>
+      .addNode(NodeType.RESPOND, (state) =>
         respond({ ...nodeParams, config: { signal }, state, model: createLlmInstance() })
       )
-      .addNode(NodeType.MODEL_INPUT, (state: AgentState) => modelInput({ ...nodeParams, state }))
+      .addNode(NodeType.MODEL_INPUT, (state) => modelInput({ ...nodeParams, state }))
       .addEdge(START, NodeType.MODEL_INPUT)
       .addEdge(NodeType.RESPOND, END)
       .addEdge(NodeType.GENERATE_CHAT_TITLE, NodeType.PERSIST_CONVERSATION_CHANGES)
       .addEdge(NodeType.PERSIST_CONVERSATION_CHANGES, NodeType.AGENT)
       .addEdge(NodeType.TOOLS, NodeType.AGENT)
       .addConditionalEdges(NodeType.MODEL_INPUT, stepRouter, {
-        [NodeType.GET_PERSISTED_CONVERSATION]: NodeType.GET_PERSISTED_CONVERSATION,
-        [NodeType.AGENT]: NodeType.AGENT,
-      })
-      .addConditionalEdges(NodeType.GET_PERSISTED_CONVERSATION, stepRouter, {
         [NodeType.PERSIST_CONVERSATION_CHANGES]: NodeType.PERSIST_CONVERSATION_CHANGES,
         [NodeType.GENERATE_CHAT_TITLE]: NodeType.GENERATE_CHAT_TITLE,
+        [NodeType.AGENT]: NodeType.AGENT,
       })
       .addConditionalEdges(NodeType.AGENT, stepRouter, {
         [NodeType.RESPOND]: NodeType.RESPOND,

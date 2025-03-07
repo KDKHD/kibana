@@ -6,16 +6,16 @@
  */
 
 import {
+  ConversationResponse,
   Replacements,
-  replaceAnonymizedValuesWithOriginalValues,
 } from '@kbn/elastic-assistant-common';
-import { AgentState, NodeParamsBase } from '../types';
+import { NodeParamsBase } from '../types';
 import { AIAssistantConversationsDataClient } from '../../../../../ai_assistant_data_clients/conversations';
-import { getLangChainMessages } from '../../../helpers';
 import { NodeType } from '../constants';
+import { DefaultAssistantGraphState } from '../state';
 
 export interface PersistConversationChangesParams extends NodeParamsBase {
-  state: AgentState;
+  state: typeof DefaultAssistantGraphState.State;
   conversationsDataClient?: AIAssistantConversationsDataClient;
   replacements?: Replacements;
 }
@@ -25,7 +25,7 @@ export async function persistConversationChanges({
   state,
   conversationsDataClient,
   replacements = {},
-}: PersistConversationChangesParams): Promise<Partial<AgentState>> {
+}: PersistConversationChangesParams) {
   logger.debug(
     () => `${NodeType.PERSIST_CONVERSATION_CHANGES}: Node state:\n${JSON.stringify(state, null, 2)}`
   );
@@ -38,9 +38,10 @@ export async function persistConversationChanges({
     };
   }
 
-  let conversation;
+  let tempConversation: ConversationResponse | null | undefined 
+
   if (state.conversation?.title !== state.chatTitle) {
-    conversation = await conversationsDataClient?.updateConversation({
+    tempConversation = await conversationsDataClient?.updateConversation({
       conversationUpdateProps: {
         id: state.conversationId,
         title: state.chatTitle,
@@ -48,45 +49,8 @@ export async function persistConversationChanges({
     });
   }
 
-  const lastMessage = state.conversation.messages
-    ? state.conversation.messages[state.conversation.messages.length - 1]
-    : undefined;
-  if (lastMessage && lastMessage.content === state.input && lastMessage.role === 'user') {
-    // this is a regenerated message, do not update the conversation again
-    return {
-      lastNode: NodeType.PERSIST_CONVERSATION_CHANGES,
-    };
-  }
-
-  const updatedConversation = await conversationsDataClient?.appendConversationMessages({
-    existingConversation: conversation ? conversation : state.conversation,
-    messages: [
-      {
-        content: replaceAnonymizedValuesWithOriginalValues({
-          messageContent: state.input,
-          replacements,
-        }),
-        role: 'user',
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  });
-  if (!updatedConversation) {
-    logger.debug('Not updated conversation');
-    return {
-      conversation: undefined,
-      chatHistory: [],
-      lastNode: NodeType.PERSIST_CONVERSATION_CHANGES,
-    };
-  }
-
-  logger.debug(`conversationId: ${state.conversationId}`);
-  const langChainMessages = getLangChainMessages(updatedConversation.messages ?? []);
-  const chatHistory = langChainMessages.slice(0, -1); // all but the last message
-
   return {
-    conversation: updatedConversation,
-    chatHistory,
+    conversation: tempConversation,
     lastNode: NodeType.PERSIST_CONVERSATION_CHANGES,
   };
 }
