@@ -61,8 +61,10 @@ Output:
 \`\`\``,
 };
 
-type GetEntriesAtKeyMapping = { [key: string]: GetEntriesAtKeyMapping | undefined | string } | undefined | string;
-
+type GetEntriesAtKeyMapping =
+  | { [key: string]: GetEntriesAtKeyMapping | undefined | string }
+  | undefined
+  | string;
 
 export const getInspectIndexMappingTool = ({ esClient }: { esClient: ElasticsearchClient }) => {
   return tool(
@@ -71,7 +73,10 @@ export const getInspectIndexMappingTool = ({ esClient }: { esClient: Elasticsear
         index: indexName,
       });
 
-      const entriesAtKey = getEntriesAtKey(indexMapping[indexName] as unknown as GetEntriesAtKeyMapping, propertyKey.split('.'));
+      const entriesAtKey = getEntriesAtKey(
+        indexMapping[indexName] as unknown as GetEntriesAtKeyMapping,
+        propertyKey.split('.')
+      );
       const result = formatEntriesAtKey(entriesAtKey);
 
       return `Object at ${propertyKey} \n${JSON.stringify(result, null, 2)}`;

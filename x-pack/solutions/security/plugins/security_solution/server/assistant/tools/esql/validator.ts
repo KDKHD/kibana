@@ -141,7 +141,12 @@ const validateEsql = async (
 };
 
 const extractErrorMessage = (error: unknown): string => {
-  if(error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
     return error.message;
   }
 
