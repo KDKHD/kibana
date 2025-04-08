@@ -11,6 +11,7 @@ export const PLUGIN_NAME = 'elasticAssistant';
 export const BASE_PATH = '/internal/elastic_assistant';
 
 export const POST_ACTIONS_CONNECTOR_EXECUTE = `${BASE_PATH}/actions/connector/{connectorId}/_execute`;
+export const GET_VOICE_CONNECTION_DETAILS = `${BASE_PATH}/voice/connection_details`;
 
 // Attack discovery
 export const ATTACK_DISCOVERY = `${BASE_PATH}/attack_discovery`;

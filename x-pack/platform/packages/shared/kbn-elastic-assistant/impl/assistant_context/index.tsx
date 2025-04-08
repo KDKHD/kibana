@@ -47,6 +47,7 @@ import {
 import { useCapabilities } from '../assistant/api/capabilities/use_capabilities';
 import { ModalSettingsTabs } from '../assistant/settings/types';
 import { AssistantNavLink } from './assistant_nav_link';
+import { VoiceAssistant } from './voice_assistant/voice_assistant';
 
 export type SelectedConversation = { id: string } | { title: string };
 export interface LastConversation {
@@ -447,6 +448,7 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({
   return (
     <AssistantContext.Provider value={value}>
       <AssistantNavLink />
+      <VoiceAssistant/>
       {children}
     </AssistantContext.Provider>
   );

@@ -41,6 +41,7 @@ import {
 import { deleteKnowledgeBaseEntryRoute } from './knowledge_base/entries/delete_route';
 import { updateKnowledgeBaseEntryRoute } from './knowledge_base/entries/update_route';
 import { getKnowledgeBaseEntryRoute } from './knowledge_base/entries/get_route';
+import { getVoiceConnectionDetails } from './voice_assistant/get_connection_details';
 
 export const registerRoutes = (
   router: ElasticAssistantPluginRouter,
@@ -54,6 +55,8 @@ export const registerRoutes = (
   /** INTERNAL */
   // Capabilities
   getCapabilitiesRoute(router);
+
+  getVoiceConnectionDetails(router);
 
   // User Conversations CRUD
   createConversationRoute(router);
