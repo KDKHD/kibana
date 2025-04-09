@@ -1,6 +1,6 @@
 import './voice_assistant.scss';
 
-import { EuiButton } from '@elastic/eui';
+import { EuiButton, EuiCode, EuiText, EuiTourStep } from '@elastic/eui';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Room, RoomEvent, RpcError, RpcInvocationData } from 'livekit-client';
 import { useAssistantContext } from '..';
@@ -12,11 +12,13 @@ import {
     useVoiceAssistant,
 } from "@livekit/components-react";
 import TranscriptionView from './TranscriptionView';
+import { getButtonDescriptions } from './page_interactions';
 
 
 export const VoiceAssistant = () => {
     const { http, navigateToApp } = useAssistantContext();
     const [room] = useState(new Room());
+    const [tourOpen, setTourOpen] = useState(false);
 
     useEffect(() => {
         room.registerRpcMethod('navigateToPage', async (data: RpcInvocationData) => {
@@ -31,11 +33,43 @@ export const VoiceAssistant = () => {
             }
         })
 
+        room.registerRpcMethod('endConversation', async (data: RpcInvocationData) => {
+            try {
+                room.disconnect();
+                return `User disconnected from the room`;
+            } catch (error) {
+                throw new RpcError(1, `Could not navigate user to app`);
+            }
+        })
+
+        room.registerRpcMethod('clickButton', async (data: RpcInvocationData) => {
+            try {
+                let params = JSON.parse(data.payload);
+                (document.querySelector(params.selector as string) as HTMLDivElement)?.click()
+                return `Clicked button`;
+            } catch (error) {
+                throw new RpcError(1, `Could not navigate user to app`);
+            }
+        })
+
+        room.registerRpcMethod('getButtons', async (data: RpcInvocationData) => {
+            try {
+                const message = `Current page: ${window.location.pathname}\n Buttons:\n${getButtonDescriptions().map(b=>`|${b.description}:${b.selector}|`).join()}`
+                console.log(message)
+                return message;
+            } catch (error) {
+                throw new RpcError(1, `Could not navigate user to app`);
+            }
+        })
+
         return () => {
             room.unregisterRpcMethod('navigateToPage');
+            room.unregisterRpcMethod('endConversation');
+            room.unregisterRpcMethod('clickButton');
+            room.unregisterRpcMethod('getButtons');
         }
     }, [])
-
+    
     const onConnectClicked = useCallback(async () => {
         const connectionDetailsData = await getConnectionDetails({
             http,
@@ -91,19 +125,5 @@ function onDeviceFailure(error: Error) {
     console.error(error);
     alert(
         "Error acquiring camera or microphone permissions. Please make sure you grant the necessary permissions in your browser and reload the tab"
-    );
-}
-
-
-function ControlBar() {
-    const { state: agentState, audioTrack } = useVoiceAssistant();
-
-    return (
-        <BarVisualizer
-            state={agentState}
-            barCount={5}
-            trackRef={audioTrack}
-            options={{ minHeight: 12 }}
-        />
     );
 }
