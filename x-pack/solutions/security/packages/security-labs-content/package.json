@@ -1,0 +1,7 @@
+{
+  "name": "@kbn/security-labs-content",
+  "version": "1.0.0",
+  "description": "Utility library for security labs content",
+  "license": "Elastic License 2.0",
+  "private": true
+}
