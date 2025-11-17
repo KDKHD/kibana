@@ -34,11 +34,25 @@ export const getWorkflowToolType = ({
     getDynamicProps: (config, { spaceId }) => {
       return {
         getHandler: () => {
-          return async (params, { request }) => {
+          return async (params, { request, events }) => {
+            events.reportProgress('One moment please while I do that for you.');
+
             const { management: workflowApi } = workflowsManagement;
             const workflowId = config.workflow_id;
 
+            const aboutIntermediateReport = new AbortController()
+            const intermediateReport = () => {
+              const timeOut = 1000
+              setTimeout(() => {
+                if(aboutIntermediateReport.signal.aborted) {
+                  return;
+                }
+                events.reportProgress('Please hold on.');
+              }, timeOut);
+            }
+
             try {
+              intermediateReport();
               const workflowResults = await executeWorkflow({
                 request,
                 spaceId,
@@ -46,6 +60,10 @@ export const getWorkflowToolType = ({
                 workflowId,
                 workflowParams: params,
               });
+
+              aboutIntermediateReport.abort();
+
+              events.reportProgress('Alright, thats done!');
 
               return {
                 results: workflowResults,

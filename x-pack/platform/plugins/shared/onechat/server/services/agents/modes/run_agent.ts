@@ -14,6 +14,7 @@ import type {
 } from '@kbn/onechat-common';
 import type { AgentHandlerContext } from '@kbn/onechat-server';
 import { runDefaultAgentMode } from './default';
+import { runSimpleReactAgentMode } from './simple_react';
 
 export interface RunAgentParams {
   /**
@@ -54,5 +55,5 @@ export const runAgent = async (
   params: RunAgentParams,
   context: AgentHandlerContext
 ): Promise<RunAgentResponse> => {
-  return runDefaultAgentMode(params, context);
+  return runSimpleReactAgentMode(params, context);
 };

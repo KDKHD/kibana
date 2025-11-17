@@ -44,7 +44,9 @@ export const resolveToolParameters = (
 export const createHandler = (
   configuration: EsqlToolConfig
 ): ToolHandlerFn<z.infer<ZodObject<any>>> => {
-  return async (params, { esClient }) => {
+  return async (params, { esClient, events }) => {
+    events.reportProgress('Please hold on while I pull up the data.');
+
     const client = esClient.asCurrentUser;
 
     // Apply default values for parameters that weren't provided by the LLM
