@@ -25,7 +25,6 @@ export const ManagementSettings = React.memo(() => {
     chrome: { docTitle, setBreadcrumbs },
     serverless,
     docLinks,
-    featureFlags,
     notifications,
   } = useKibana().services;
   const {
@@ -107,7 +106,6 @@ export const ManagementSettings = React.memo(() => {
         toast={notifications.toasts}
         application={application}
         docLinks={docLinks}
-        featureFlags={featureFlags}
       >
         <AssistantSettingsManagement
           dataViews={dataViews}

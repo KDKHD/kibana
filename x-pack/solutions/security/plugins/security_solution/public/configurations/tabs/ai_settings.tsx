@@ -25,7 +25,6 @@ export const AISettings: React.FC = () => {
     data: { dataViews },
     docLinks,
     notifications: { toasts },
-    featureFlags,
   } = useKibana().services;
 
   const {
@@ -59,7 +58,6 @@ export const AISettings: React.FC = () => {
         application={application}
         docLinks={docLinks}
         toast={toasts}
-        featureFlags={featureFlags}
       >
         <SearchAILakeConfigurationsSettingsManagement
           dataViews={dataViews}

@@ -6,7 +6,7 @@
  */
 
 import React, { createContext, useContext } from 'react';
-import type { ApplicationStart, DocLinksStart, FeatureFlagsStart, IToasts } from '@kbn/core/public';
+import type { ApplicationStart, DocLinksStart, IToasts } from '@kbn/core/public';
 
 type DefaultAiConnectorSettingContext = ReturnType<typeof DefaultAiConnector>;
 
@@ -29,19 +29,16 @@ export const DefaultAiConnectorSettingsContextProvider = ({
   toast,
   application,
   docLinks,
-  featureFlags,
 }: {
   children: React.ReactNode;
   toast: IToasts | undefined;
   application: ApplicationStart;
   docLinks: DocLinksStart;
-  featureFlags: FeatureFlagsStart;
 }) => {
   const value = DefaultAiConnector({
     toast,
     application,
     docLinks,
-    featureFlags,
   });
   return (
     <DefaultAiConnectorSettingContext.Provider value={value}>
@@ -54,18 +51,15 @@ const DefaultAiConnector = ({
   toast,
   application,
   docLinks,
-  featureFlags,
 }: {
   toast: IToasts | undefined;
   application: ApplicationStart;
   docLinks: DocLinksStart;
-  featureFlags: FeatureFlagsStart;
 }) => {
   return {
     toast,
     application,
     docLinks,
-    featureFlags,
   };
 };
 
