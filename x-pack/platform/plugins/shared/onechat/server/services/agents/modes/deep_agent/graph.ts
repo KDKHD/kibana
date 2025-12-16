@@ -23,7 +23,8 @@ import { BaseMessage, RemoveMessage } from '@langchain/core/messages';
 import { createResearchMiddleware } from './middlewares/researchAgentMiddleware';
 import type { FileData } from '@kbn/langchain-deep-agent';
 import type { DynamicStructuredTool } from 'langchain';
-import { createSkillSystemPromptMiddleware, createSkillToolExecutor } from './middlewares/skillMiddleware';
+import { createSkillSystemPromptMiddleware } from './middlewares/skillMiddleware';
+import { createSkillToolExecutor } from './utils/skill_tool_executor';
 
 export const createAgentGraph = ({
   chatModel,
