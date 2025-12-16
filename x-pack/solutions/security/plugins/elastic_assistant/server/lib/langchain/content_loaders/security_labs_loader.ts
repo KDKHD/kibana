@@ -35,7 +35,7 @@ export const loadSecurityLabs = async (
       true
     );
 
-    const rawDocs = await docsLoader.load();
+    const rawDocs = await docsLoader?.load();
 
     // Add additional metadata to set kbResource as esql
     const docs = addRequiredKbResourceMetadata({

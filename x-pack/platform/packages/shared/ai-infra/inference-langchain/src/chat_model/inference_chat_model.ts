@@ -173,11 +173,10 @@ export class InferenceChatModel extends BaseChatModel<InferenceChatModelCallOpti
   override bindTools(tools: BindToolsInput[], kwargs?: Partial<InferenceChatModelCallOptions>) {
     // conversion will be done at call time for simplicity's sake
     // so we just need to implement this method with the default behavior to support tools
-    
     return this.withConfig({
       tools,
       ...kwargs,
-    })
+    });
   }
 
   invocationParams(options: this['ParsedCallOptions']): InvocationParams {

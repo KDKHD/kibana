@@ -18,15 +18,15 @@ import { getRandomAnsweringMessage, getRandomThinkingMessage } from './i18n';
 import { steps, tags } from './constants';
 import type { StateType } from './state';
 import { StateAnnotation } from './state';
-import { createDeepAgent } from '@kbn/langchain-deep-agent';
 import { BaseMessage, RemoveMessage } from '@langchain/core/messages';
 import { createResearchMiddleware } from './middlewares/researchAgentMiddleware';
 import type { FileData } from '@kbn/langchain-deep-agent';
 import type { DynamicStructuredTool } from 'langchain';
 import { createSkillSystemPromptMiddleware } from './middlewares/skillMiddleware';
 import { createSkillToolExecutor } from './utils/skill_tool_executor';
+const deepagents = require("fix-esm").require('deepagents');
 
-export const createAgentGraph = ({
+export const createAgentGraph = async ({
   chatModel,
   tools,
   skillFiles,
@@ -53,7 +53,7 @@ export const createAgentGraph = ({
 
   const skillExecutorTool = createSkillToolExecutor(skillTools, events)
 
-  const deepAgent = createDeepAgent({
+  const deepAgent = deepagents.createDeepAgent({
     model: chatModel,
     tools: [...tools, skillExecutorTool],
     systemPrompt: systemPrompt,

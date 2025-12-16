@@ -18,11 +18,13 @@ import { SkillsService } from './skills';
 import { RunnerFactoryImpl } from './runner';
 import { ConversationServiceImpl } from './conversation';
 import { createChatService } from './chat';
+import { type AttachmentService, createAttachmentService } from './attachments';
 
 interface ServiceInstances {
   tools: ToolsService;
   agents: AgentsService;
   skills: SkillsService;
+  attachments: AttachmentService;
 }
 
 export class ServiceManager {
@@ -35,12 +37,14 @@ export class ServiceManager {
       tools: new ToolsService(),
       agents: new AgentsService(),
       skills: new SkillsService(),
+      attachments: createAttachmentService(),
     };
 
     this.internalSetup = {
       tools: this.services.tools.setup({ logger, workflowsManagement }),
       agents: this.services.agents.setup({ logger }),
       skills: this.services.skills.setup({ logger }),
+      attachments: this.services.attachments.setup(),
     };
 
     return this.internalSetup;
@@ -54,6 +58,7 @@ export class ServiceManager {
     inference,
     uiSettings,
     savedObjects,
+    trackingService,
   }: ServicesStartDeps): InternalStartServices {
     if (!this.services) {
       throw new Error('#startServices called before #setupServices');
@@ -68,6 +73,8 @@ export class ServiceManager {
       return runner;
     };
 
+    const attachments = this.services.attachments.start();
+
     const tools = this.services.tools.start({
       getRunner,
       spaces,
@@ -80,6 +87,8 @@ export class ServiceManager {
       spaces,
       security,
       elasticsearch,
+      uiSettings,
+      savedObjects,
       getRunner,
       toolsService: tools,
     });
@@ -91,9 +100,12 @@ export class ServiceManager {
       security,
       elasticsearch,
       inference,
+      spaces,
       toolsService: tools,
       agentsService: agents,
       skillsService: skills,
+      attachmentsService: attachments,
+      trackingService,
     });
     runner = runnerFactory.getRunner();
 
@@ -111,12 +123,14 @@ export class ServiceManager {
       agentService: agents,
       uiSettings,
       savedObjects,
+      trackingService,
     });
 
     this.internalStart = {
       tools,
       agents,
       skills,
+      attachments,
       conversations,
       runnerFactory,
       chat,

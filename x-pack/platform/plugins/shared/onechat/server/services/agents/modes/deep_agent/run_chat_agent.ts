@@ -8,13 +8,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import { from, filter, shareReplay, merge, Subject, finalize } from 'rxjs';
 import { isStreamEvent, toolsToLangchain } from '@kbn/onechat-genai-utils/langchain';
-import type { ChatAgentEvent } from '@kbn/onechat-common';
+import type { ChatAgentEvent, RoundInput } from '@kbn/onechat-common';
 import type { AgentHandlerContext, AgentEventEmitterFn } from '@kbn/onechat-server';
 import {
   addRoundCompleteEvent,
   extractRound,
-  selectProviderTools,
   conversationToLangchainMessages,
+  prepareConversation,
+  selectTools,
 } from '../utils';
 import { resolveCapabilities } from '../utils/capabilities';
 import { resolveConfiguration } from '../utils/configuration';
@@ -26,7 +27,9 @@ import { DynamicStructuredTool } from 'langchain';
 
 const chatAgentGraphName = 'deep-onechat-agent';
 
-export type RunChatAgentParams = Omit<RunAgentParams, 'mode'>;
+export type RunChatAgentParams = Omit<RunAgentParams, 'mode'> & { 
+  startTime?: Date;
+}
 
 export type RunChatAgentFn = (
   params: RunChatAgentParams,
@@ -39,32 +42,42 @@ export type RunChatAgentFn = (
 export const runDeepAgentMode: RunChatAgentFn = async (
   {
     nextInput,
-    conversation = [],
+    conversation,
     agentConfiguration,
     capabilities,
     runId = uuidv4(),
     agentId,
     abortSignal,
+    startTime = new Date(),
   },
-  { logger, request, modelProvider, toolProvider, skillProvider, events }
+  context
 ) => {
+  const { logger, modelProvider, toolProvider, attachments, request, events, skillProvider } = context;
   const model = await modelProvider.getDefaultModel();
   const resolvedCapabilities = resolveCapabilities(capabilities);
   const resolvedConfiguration = resolveConfiguration(agentConfiguration);
   logger.debug(`Running chat agent with connector: ${model.connector.name}, runId: ${runId}`);
 
-  const selectedTools = await selectProviderTools({
-    provider: toolProvider,
-    selection: agentConfiguration.tools,
-    request,
-  });
-
-  const skills = await skillProvider.list({ request });
-
   const manualEvents$ = new Subject<ChatAgentEvent>();
   const eventEmitter: AgentEventEmitterFn = (event) => {
     manualEvents$.next(event);
   };
+  
+  const processedConversation = await prepareConversation({
+    nextInput,
+    previousRounds: conversation?.rounds ?? [],
+    context,
+  });
+
+  const selectedTools = await selectTools({
+    conversation: processedConversation,
+    toolProvider,
+    agentConfiguration,
+    attachmentsService: attachments,
+    request,
+  });
+
+  const skills = await skillProvider.list({ request });
 
   const { tools: langchainTools, idMappings: toolIdMapping } = await toolsToLangchain({
     tools: selectedTools,
@@ -80,8 +93,7 @@ export const runDeepAgentMode: RunChatAgentFn = async (
   const graphRecursionLimit = cycleLimit * 2 + 8;
 
   const initialMessages = conversationToLangchainMessages({
-    nextInput,
-    previousRounds: conversation,
+    conversation: processedConversation,
   });
 
   // Convert skills to FileData format for the agent's filesystem
@@ -99,7 +111,7 @@ export const runDeepAgentMode: RunChatAgentFn = async (
     skillTools.push(...skill.tools);
   }
 
-  const agentGraph = createAgentGraph({
+  const agentGraph = await createAgentGraph({
     logger,
     events: { emit: eventEmitter },
     chatModel: model.chatModel,
@@ -138,8 +150,13 @@ export const runDeepAgentMode: RunChatAgentFn = async (
     finalize(() => manualEvents$.complete())
   );
 
+  const processedInput: RoundInput = {
+    message: processedConversation.nextInput.message,
+    attachments: processedConversation.nextInput.attachments.map((a) => a.attachment),
+  };
+
   const events$ = merge(graphEvents$, manualEvents$).pipe(
-    addRoundCompleteEvent({ userInput: nextInput }),
+    addRoundCompleteEvent({ userInput: processedInput, startTime, modelProvider }),
     shareReplay()
   );
 
