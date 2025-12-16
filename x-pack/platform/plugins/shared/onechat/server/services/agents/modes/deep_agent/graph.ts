@@ -20,11 +20,17 @@ import type { StateType } from './state';
 import { StateAnnotation } from './state';
 import { BaseMessage, RemoveMessage } from '@langchain/core/messages';
 import { createResearchMiddleware } from './middlewares/researchAgentMiddleware';
-import type { FileData } from '@kbn/langchain-deep-agent';
 import type { DynamicStructuredTool } from 'langchain';
 import { createSkillSystemPromptMiddleware } from './middlewares/skillMiddleware';
 import { createSkillToolExecutor } from './utils/skill_tool_executor';
 const deepagents = require("fix-esm").require('deepagents');
+
+export type FileData = {
+  content: string[];
+  created_at: string;
+  modified_at: string;
+  description?: string;
+}
 
 export const createAgentGraph = async ({
   chatModel,
