@@ -21,6 +21,8 @@ import { resolveConfiguration } from '../utils/configuration';
 import { createAgentGraph } from './graph';
 import { convertGraphEvents } from './convert_graph_events';
 import type { RunAgentParams, RunAgentResponse } from '../run_agent';
+import { getSkillFilePath } from '@kbn/onechat-common/skills';
+import { DynamicStructuredTool } from 'langchain';
 
 const chatAgentGraphName = 'deep-onechat-agent';
 
@@ -44,7 +46,7 @@ export const runDeepAgentMode: RunChatAgentFn = async (
     agentId,
     abortSignal,
   },
-  { logger, request, modelProvider, toolProvider, events }
+  { logger, request, modelProvider, toolProvider, skillProvider, events }
 ) => {
   const model = await modelProvider.getDefaultModel();
   const resolvedCapabilities = resolveCapabilities(capabilities);
@@ -56,6 +58,8 @@ export const runDeepAgentMode: RunChatAgentFn = async (
     selection: agentConfiguration.tools,
     request,
   });
+
+  const skills = await skillProvider.list({ request });
 
   const manualEvents$ = new Subject<ChatAgentEvent>();
   const eventEmitter: AgentEventEmitterFn = (event) => {
@@ -80,11 +84,28 @@ export const runDeepAgentMode: RunChatAgentFn = async (
     previousRounds: conversation,
   });
 
+  // Convert skills to FileData format for the agent's filesystem
+  const now = new Date().toISOString();
+  const skillsFiles: Record<string, { content: string[]; created_at: string; modified_at: string; description?: string }> = {};
+  const skillTools: DynamicStructuredTool[] = [];
+  for (const skill of skills) {
+    const filePath = getSkillFilePath(skill);
+    skillsFiles[filePath] = {
+      content: [skill.content],
+      created_at: now,
+      modified_at: now,
+      description: skill.description,
+    };
+    skillTools.push(...skill.tools);
+  }
+
   const agentGraph = createAgentGraph({
     logger,
     events: { emit: eventEmitter },
     chatModel: model.chatModel,
     tools: langchainTools,
+    skillFiles: skillsFiles,
+    skillTools: skillTools,
     configuration: resolvedConfiguration,
     capabilities: resolvedCapabilities,
   });

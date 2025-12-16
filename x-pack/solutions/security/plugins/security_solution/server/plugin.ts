@@ -131,6 +131,7 @@ import {
 } from '../common/entity_analytics/risk_engine';
 import { isEndpointPackageV2 } from '../common/endpoint/utils/package_v2';
 import { assistantTools } from './assistant/tools';
+import { GET_ALERTS_SKILL, getAlertTriageSkill, addAlertNoteTool } from './assistant/skills';
 import { turnOffAgentPolicyFeatures } from './endpoint/migrations/turn_off_agent_policy_features';
 import { getCriblPackagePolicyPostCreateOrUpdateCallback } from './security_integrations';
 import { scheduleEntityAnalyticsMigration } from './lib/entity_analytics/migrations';
@@ -601,6 +602,13 @@ export class Plugin implements ISecuritySolutionPlugin {
       });
     } else {
       this.logger.warn('Task Manager not available, health diagnostic task not registered.');
+    }
+
+    // Register skills and tools with onechat
+    if (plugins.onechat) {
+      // Register skills
+      plugins.onechat.skills.register(GET_ALERTS_SKILL);
+      plugins.onechat.skills.register(getAlertTriageSkill());
     }
 
     return {

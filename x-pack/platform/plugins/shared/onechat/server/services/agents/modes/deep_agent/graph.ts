@@ -19,12 +19,18 @@ import { steps, tags } from './constants';
 import type { StateType } from './state';
 import { StateAnnotation } from './state';
 import { createDeepAgent } from '@kbn/langchain-deep-agent';
-import { BaseMessage, HumanMessage, RemoveMessage } from '@langchain/core/messages';
+import { BaseMessage, RemoveMessage } from '@langchain/core/messages';
 import { createResearchMiddleware } from './middlewares/researchAgentMiddleware';
+import type { FileData } from '@kbn/langchain-deep-agent';
+import type { DynamicStructuredTool } from 'langchain';
+import { createSkillSystemPromptMiddleware } from './middlewares/skillMiddleware';
+import { createSkillToolExecutor } from './utils/skill_tool_executor';
 
 export const createAgentGraph = ({
   chatModel,
   tools,
+  skillFiles,
+  skillTools,
   configuration,
   capabilities,
   logger,
@@ -32,6 +38,8 @@ export const createAgentGraph = ({
 }: {
   chatModel: InferenceChatModel;
   tools: StructuredTool[];
+  skillFiles: Record<string, FileData>;
+  skillTools: DynamicStructuredTool[];
   capabilities: ResolvedAgentCapabilities;
   configuration: ResolvedConfiguration;
   logger: Logger;
@@ -43,12 +51,15 @@ export const createAgentGraph = ({
     capabilities,
   });
 
+  const skillExecutorTool = createSkillToolExecutor(skillTools, events)
+
   const deepAgent = createDeepAgent({
     model: chatModel,
-    tools: tools,
+    tools: [...tools, skillExecutorTool],
     systemPrompt: systemPrompt,
     middleware: [
-      createResearchMiddleware(events)
+      createResearchMiddleware(events),
+      createSkillSystemPromptMiddleware(events, skillFiles),
     ],
   });
 
@@ -57,7 +68,9 @@ export const createAgentGraph = ({
 
     const response = await deepAgent.invoke({
       messages: state.messages,
-      files: {}
+      files: {
+        ...skillFiles
+      },
     });
 
     const responseMessages = response.messages as BaseMessage[];
