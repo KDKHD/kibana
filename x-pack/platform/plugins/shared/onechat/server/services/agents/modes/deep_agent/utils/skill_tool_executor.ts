@@ -1,10 +1,11 @@
 import { AgentEventEmitter } from "@kbn/onechat-server/agents";
-import { AIMessage, DynamicStructuredTool, tool, ToolMessage } from "langchain";
+import { AIMessage, tool, ToolMessage } from "langchain";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { z } from "zod";
 import { v4 as uuidv4 } from 'uuid';
+import { StructuredToolInterface } from "@langchain/core/tools";
 
-export const createSkillToolExecutor = (tools: DynamicStructuredTool[], events: AgentEventEmitter) => {
+export const createSkillToolExecutor = (tools: StructuredToolInterface[], events: AgentEventEmitter) => {
     const toolNode = new ToolNode(tools)
 
     const skillExecutorTool = tool(async ({

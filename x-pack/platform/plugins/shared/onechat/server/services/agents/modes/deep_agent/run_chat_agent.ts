@@ -23,7 +23,7 @@ import { createAgentGraph } from './graph';
 import { convertGraphEvents } from './convert_graph_events';
 import type { RunAgentParams, RunAgentResponse } from '../run_agent';
 import { getSkillFilePath } from '@kbn/onechat-common/skills';
-import { DynamicStructuredTool } from 'langchain';
+import { StructuredToolInterface } from "@langchain/core/tools";
 import type { FileData } from './graph';
 
 const chatAgentGraphName = 'deep-onechat-agent';
@@ -100,7 +100,7 @@ export const runDeepAgentMode: RunChatAgentFn = async (
   // Convert skills to FileData format for the agent's filesystem
   const now = new Date().toISOString();
   const skillsFiles: Record<string, FileData> = {};
-  const skillTools: DynamicStructuredTool[] = [];
+  const skillTools: StructuredToolInterface[] = [];
   for (const skill of skills) {
     const filePath = getSkillFilePath(skill);
     skillsFiles[filePath] = {

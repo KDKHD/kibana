@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { FileData } from '@kbn/langchain-deep-agent';
+import type { FileData } from '../graph';
 
 /**
  * Represents a node in the directory tree structure

@@ -20,10 +20,10 @@ import type { StateType } from './state';
 import { StateAnnotation } from './state';
 import { BaseMessage, RemoveMessage } from '@langchain/core/messages';
 import { createResearchMiddleware } from './middlewares/researchAgentMiddleware';
-import type { DynamicStructuredTool } from 'langchain';
 import { createSkillSystemPromptMiddleware } from './middlewares/skillMiddleware';
 import { createSkillToolExecutor } from './utils/skill_tool_executor';
 const deepagents = require("fix-esm").require('deepagents');
+import { StructuredToolInterface } from "@langchain/core/tools";
 
 export type FileData = {
   content: string[];
@@ -45,7 +45,7 @@ export const createAgentGraph = async ({
   chatModel: InferenceChatModel;
   tools: StructuredTool[];
   skillFiles: Record<string, FileData>;
-  skillTools: DynamicStructuredTool[];
+  skillTools: StructuredToolInterface[];
   capabilities: ResolvedAgentCapabilities;
   configuration: ResolvedConfiguration;
   logger: Logger;
@@ -63,6 +63,7 @@ export const createAgentGraph = async ({
     model: chatModel,
     tools: [...tools, skillExecutorTool],
     systemPrompt: systemPrompt,
+    toolTokenLimitBeforeEvict: 0,
     middleware: [
       createResearchMiddleware(events),
       createSkillSystemPromptMiddleware(events, skillFiles),
