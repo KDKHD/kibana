@@ -63,7 +63,7 @@ export const createAgentGraph = async ({
     model: chatModel,
     tools: [...tools, skillExecutorTool],
     systemPrompt: systemPrompt,
-    toolTokenLimitBeforeEvict: 0,
+    toolTokenLimitBeforeEvict: false,
     middleware: [
       createResearchMiddleware(events),
       createSkillSystemPromptMiddleware(events, skillFiles),
