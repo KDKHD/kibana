@@ -17,6 +17,7 @@ import type { WorkflowsExtensionsServerPluginSetup } from '@kbn/workflows-extens
 import type { UsageCollectionSetup } from '@kbn/usage-collection-plugin/server';
 import type { BuiltInAgentDefinition } from '@kbn/onechat-server/agents';
 import type { ToolsServiceSetup, ToolRegistry } from './services/tools';
+import type { SkillsServiceSetup } from './services/skills';
 import type { AttachmentServiceSetup } from './services/attachments';
 
 export interface OnechatSetupDependencies {
@@ -75,6 +76,16 @@ export interface AgentsSetup {
 }
 
 /**
+ * Onechat skill service's setup contract
+ */
+export interface SkillsSetup {
+  /**
+   * Register a built-in skill to be available in onechat.
+   */
+  register: SkillsServiceSetup['register'];
+}
+
+/**
  * Setup contract of the onechat plugin.
  */
 export interface OnechatPluginSetup {
@@ -86,6 +97,10 @@ export interface OnechatPluginSetup {
    * Tools setup contract, which can be used to register built-in tools.
    */
   tools: ToolsSetup;
+  /**
+   * Skills setup contract, can be used to register built-in skills.
+   */
+  skills: SkillsSetup;
   /**
    * Attachments setup contract, which can be used to register attachment types.
    */

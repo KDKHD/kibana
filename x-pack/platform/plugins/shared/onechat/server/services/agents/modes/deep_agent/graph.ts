@@ -18,13 +18,25 @@ import { getRandomAnsweringMessage, getRandomThinkingMessage } from './i18n';
 import { steps, tags } from './constants';
 import type { StateType } from './state';
 import { StateAnnotation } from './state';
-import { BaseMessage, HumanMessage, RemoveMessage } from '@langchain/core/messages';
+import { BaseMessage, RemoveMessage } from '@langchain/core/messages';
 import { createResearchMiddleware } from './middlewares/researchAgentMiddleware';
+import { createSkillSystemPromptMiddleware } from './middlewares/skillMiddleware';
+import { createSkillToolExecutor } from './utils/skill_tool_executor';
 const deepagents = require("fix-esm").require('deepagents');
+import { StructuredToolInterface } from "@langchain/core/tools";
 
-export const createAgentGraph = ({
+export type FileData = {
+  content: string[];
+  created_at: string;
+  modified_at: string;
+  description?: string;
+}
+
+export const createAgentGraph = async ({
   chatModel,
   tools,
+  skillFiles,
+  skillTools,
   configuration,
   capabilities,
   logger,
@@ -32,6 +44,8 @@ export const createAgentGraph = ({
 }: {
   chatModel: InferenceChatModel;
   tools: StructuredTool[];
+  skillFiles: Record<string, FileData>;
+  skillTools: StructuredToolInterface[];
   capabilities: ResolvedAgentCapabilities;
   configuration: ResolvedConfiguration;
   logger: Logger;
@@ -43,12 +57,16 @@ export const createAgentGraph = ({
     capabilities,
   });
 
+  const skillExecutorTool = createSkillToolExecutor(skillTools, events)
+
   const deepAgent = deepagents.createDeepAgent({
     model: chatModel,
-    tools: tools,
+    tools: [...tools, skillExecutorTool],
     systemPrompt: systemPrompt,
+    toolTokenLimitBeforeEvict: false,
     middleware: [
-      createResearchMiddleware(events)
+      createResearchMiddleware(events),
+      createSkillSystemPromptMiddleware(events, skillFiles),
     ],
   });
 
@@ -57,7 +75,9 @@ export const createAgentGraph = ({
 
     const response = await deepAgent.invoke({
       messages: state.messages,
-      files: {}
+      files: {
+        ...skillFiles
+      },
     });
 
     const responseMessages = response.messages as BaseMessage[];

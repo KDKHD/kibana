@@ -21,6 +21,7 @@ import type {
   ModelProvider,
   ScopedRunner,
   ToolProvider,
+  SkillProvider,
   WritableToolResultStore,
   AttachmentsService,
 } from '../runner';
@@ -68,6 +69,10 @@ export interface AgentHandlerContext {
    * Tool provider that can be used to list or execute tools.
    */
   toolProvider: ToolProvider;
+  /**
+   * Skill provider that can be used to list or get skills.
+   */
+  skillProvider: SkillProvider;
   /**
    * Onechat runner scoped to the current execution.
    */

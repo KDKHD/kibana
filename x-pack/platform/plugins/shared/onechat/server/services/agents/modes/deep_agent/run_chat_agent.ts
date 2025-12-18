@@ -22,6 +22,9 @@ import { resolveConfiguration } from '../utils/configuration';
 import { createAgentGraph } from './graph';
 import { convertGraphEvents } from './convert_graph_events';
 import type { RunAgentParams, RunAgentResponse } from '../run_agent';
+import { getSkillFilePath } from '@kbn/onechat-common/skills';
+import { StructuredToolInterface } from "@langchain/core/tools";
+import type { FileData } from './graph';
 
 const chatAgentGraphName = 'deep-onechat-agent';
 
@@ -50,7 +53,7 @@ export const runDeepAgentMode: RunChatAgentFn = async (
   },
   context
 ) => {
-  const { logger, modelProvider, toolProvider, attachments, request, events } = context;
+  const { logger, modelProvider, toolProvider, attachments, request, events, skillProvider } = context;
   const model = await modelProvider.getDefaultModel();
   const resolvedCapabilities = resolveCapabilities(capabilities);
   const resolvedConfiguration = resolveConfiguration(agentConfiguration);
@@ -75,6 +78,8 @@ export const runDeepAgentMode: RunChatAgentFn = async (
     request,
   });
 
+  const skills = await skillProvider.list({ request });
+
   const { tools: langchainTools, idMappings: toolIdMapping } = await toolsToLangchain({
     tools: selectedTools,
     logger,
@@ -92,11 +97,28 @@ export const runDeepAgentMode: RunChatAgentFn = async (
     conversation: processedConversation,
   });
 
+  // Convert skills to FileData format for the agent's filesystem
+  const now = new Date().toISOString();
+  const skillsFiles: Record<string, FileData> = {};
+  const skillTools: StructuredToolInterface[] = [];
+  for (const skill of skills) {
+    const filePath = getSkillFilePath(skill);
+    skillsFiles[filePath] = {
+      content: [skill.content],
+      created_at: now,
+      modified_at: now,
+      description: skill.description,
+    };
+    skillTools.push(...skill.tools);
+  }
+
   const agentGraph = await createAgentGraph({
     logger,
     events: { emit: eventEmitter },
     chatModel: model.chatModel,
     tools: langchainTools,
+    skillFiles: skillsFiles,
+    skillTools: skillTools,
     configuration: resolvedConfiguration,
     capabilities: resolvedCapabilities,
   });

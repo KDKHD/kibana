@@ -105,6 +105,9 @@ export class OnechatPlugin
       agents: {
         register: serviceSetups.agents.register.bind(serviceSetups.agents),
       },
+      skills: {
+        register: serviceSetups.skills.register.bind(serviceSetups.skills),
+      },
       attachments: {
         registerType: serviceSetups.attachments.registerType.bind(serviceSetups.attachments),
       },

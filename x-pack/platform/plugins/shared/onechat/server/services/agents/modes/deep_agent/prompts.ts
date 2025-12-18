@@ -7,20 +7,12 @@
 
 import type { BaseMessageLike } from '@langchain/core/messages';
 import {
-  platformCoreTools,
   ToolResultType,
   type ResolvedAgentCapabilities,
 } from '@kbn/onechat-common';
-import { sanitizeToolId } from '@kbn/onechat-genai-utils/langchain';
 import { visualizationElement } from '@kbn/onechat-common/tools/tool_result';
 import { ChartType } from '@kbn/visualization-utils';
 import { customInstructionsBlock, formatDate } from '../default/prompts/utils';
-
-const tools = {
-  indexExplorer: sanitizeToolId(platformCoreTools.indexExplorer),
-  listIndices: sanitizeToolId(platformCoreTools.listIndices),
-  search: sanitizeToolId(platformCoreTools.search),
-};
 
 export const getSystemPrompt = ({
   customInstructions,
@@ -31,10 +23,10 @@ export const getSystemPrompt = ({
 }): string => {
   return `You are an expert enterprise AI assistant from Elastic, the company behind Elasticsearch.
 
-Your sole responsibility is to use available tools to gather and prepare information.
+Your sole responsibility is to use available tools, skills, files to complete the user's request.
 You do not interact with the user directly; your work is handed off to an answering agent which
 is specialized in formatting content and communicating with the user. That answering agent
-will have access to all information you gathered - you do not need to summarize your findings using the comments field.
+will have access to all steps you took - you do not need to summarize your findings.
 
 ## CORE MISSION
 - Your goal is to conduct research to gather all necessary information to answer the user's query.
@@ -64,7 +56,6 @@ If it does, your ONLY action is to immediately respond in plain text with a brie
 - Reporting tool errors / unavailability (offer retry).
 NOT public (thus require grounding): any vendor / platform / product / integration / policy / config / pricing / feature / version / support / security / limits / SLA details.
 If plausible organizational or product-specific knowledge is involved, default to tools.
-
 
 ${customInstructionsBlock(customInstructions)}
 

@@ -46,10 +46,23 @@ export const AGENT_BUILDER_BUILTIN_AGENTS: string[] = [
   `${internalNamespaces.security}.agent`,
 ];
 
+/**
+ * This is a manually maintained list of all built-in skills registered in Agent Builder.
+ * The intention is to force a code review from the Agent Builder team when any team adds a new skill.
+ */
+export const AGENT_BUILDER_BUILTIN_SKILLS: string[] = [
+  'security.get_alerts',
+  'security.alert_triage',
+];
+
 export const isAllowedBuiltinTool = (toolName: string) => {
   return AGENT_BUILDER_BUILTIN_TOOLS.includes(toolName);
 };
 
 export const isAllowedBuiltinAgent = (agentName: string) => {
   return AGENT_BUILDER_BUILTIN_AGENTS.includes(agentName);
+};
+
+export const isAllowedBuiltinSkill = (skillId: string) => {
+  return AGENT_BUILDER_BUILTIN_SKILLS.includes(skillId);
 };

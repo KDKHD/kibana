@@ -66,6 +66,7 @@
       "share"
     ],
     "optionalPlugins": [
+      "onechat",
       "encryptedSavedObjects",
       "fleet",
       "ml",

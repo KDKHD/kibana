@@ -27,6 +27,7 @@ import type {
 } from '@kbn/onechat-server/runner';
 import type { ToolsServiceStart } from '../tools';
 import type { AgentsServiceStart } from '../agents';
+import type { SkillsServiceStart } from '../skills';
 import type { AttachmentServiceStart } from '../attachments';
 import type { ModelProviderFactoryFn } from './model_provider';
 import type { TrackingService } from '../../telemetry';
@@ -45,6 +46,7 @@ export interface CreateScopedRunnerDeps {
   modelProvider: ModelProvider;
   toolsService: ToolsServiceStart;
   agentsService: AgentsServiceStart;
+  skillsService: SkillsServiceStart;
   attachmentsService: AttachmentServiceStart;
   trackingService?: TrackingService;
   // other deps

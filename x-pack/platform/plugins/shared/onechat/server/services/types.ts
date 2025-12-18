@@ -16,6 +16,7 @@ import type { SpacesPluginStart } from '@kbn/spaces-plugin/server';
 import type { ToolsServiceSetup, ToolsServiceStart } from './tools';
 import type { RunnerFactory } from './runner';
 import type { AgentsServiceSetup, AgentsServiceStart } from './agents';
+import type { SkillsServiceSetup, SkillsServiceStart } from './skills';
 import type { ConversationService } from './conversation';
 import type { ChatService } from './chat';
 import type { AttachmentServiceSetup, AttachmentServiceStart } from './attachments';
@@ -24,12 +25,14 @@ import type { TrackingService } from '../telemetry/tracking_service';
 export interface InternalSetupServices {
   tools: ToolsServiceSetup;
   agents: AgentsServiceSetup;
+  skills: SkillsServiceSetup;
   attachments: AttachmentServiceSetup;
 }
 
 export interface InternalStartServices {
   tools: ToolsServiceStart;
   agents: AgentsServiceStart;
+  skills: SkillsServiceStart;
   attachments: AttachmentServiceStart;
   conversations: ConversationService;
   chat: ChatService;
