@@ -40,11 +40,11 @@ export const getWorkflowToolType = ({
             const { management: workflowApi } = workflowsManagement;
             const workflowId = config.workflow_id;
 
-            const aboutIntermediateReport = new AbortController()
+            const abortIntermediateReport = new AbortController()
             const intermediateReport = () => {
               const timeOut = 1000
               setTimeout(() => {
-                if(aboutIntermediateReport.signal.aborted) {
+                if(abortIntermediateReport.signal.aborted) {
                   return;
                 }
                 events.reportProgress('Please hold on.');
@@ -61,7 +61,7 @@ export const getWorkflowToolType = ({
                 workflowParams: params,
               });
 
-              aboutIntermediateReport.abort();
+              abortIntermediateReport.abort();
 
               events.reportProgress('Alright, thats done!');
 
