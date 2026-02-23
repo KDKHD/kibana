@@ -1,0 +1,302 @@
+name: New workflow
+enabled: false
+description: This is a new workflow
+triggers:
+  - type: alert
+
+inputs:
+  - name: message
+    type: string
+    default: "hello world"
+
+steps:
+  # Reusable workflow snippet that replaces the `security.getAlertTimelineString` custom step
+# using built-in Elasticsearch steps + LiquidJS templating.
+#
+# Assumes the following inputs are available as variables in context:
+# - `alertId`
+# - `alertIndex`
+#
+# Paste these steps into a workflow `steps:` list.
+
+  - name: foreach_step
+    type: foreach
+    foreach: "{{event.alerts}}"
+    steps:
+      - name: get_alert_timeline_string__fetch_alert
+        type: elasticsearch.search
+        with:
+          index: '{{ foreach.item._index }}'
+          size: 1
+          query:
+            ids:
+              values:
+                - '{{ foreach.item._id }}'
+              _source:
+                - event.category
+                - event.action
+                - event.outcome
+                - process.name
+                - process.pid
+                - process.args
+                - process.title
+                - process.working_directory
+                - process.exit_code
+                - process.ppid
+                - process.executable
+                - process.hash.sha256
+                - process.parent.name
+                - process.parent.pid
+                - file.name
+                - source.ip
+                - source.port
+                - destination.ip
+                - destination.port
+                - user.name
+                - user.domain
+                - host.name
+                - kibana.alert.severity
+                - kibana.alert.rule.name
+                - message
+
+      - name: get_alert_timeline_string__build
+        type: data.set
+        with:
+          timeline_string: |-
+            {%- liquid
+              assign hit_count = steps.get_alert_timeline_string__fetch_alert.output.hits.hits.size | default: 0
+              if hit_count > 0
+                assign src = steps.get_alert_timeline_string__fetch_alert.output.hits.hits[0]._source
+              else
+                assign src = empty
+              endif
+
+              assign event_category = src.event.category | default: src["event.category"] | default: "" | join: ", " | strip
+              assign process_name = src.process.name | default: src["process.name"] | default: "" | join: ", " | strip
+              assign parent_process_name = src.process.parent.name | default: src["process.parent.name"] | default: "" | join: ", " | strip
+              assign file_name = src.file.name | default: src["file.name"] | default: "" | join: ", " | strip
+              assign source_ip = src.source.ip | default: src["source.ip"] | default: "" | join: ", " | strip
+              assign source_port = src.source.port | default: src["source.port"] | default: "" | join: ", " | strip
+              assign destination_ip = src.destination.ip | default: src["destination.ip"] | default: "" | join: ", " | strip
+              assign destination_port = src.destination.port | default: src["destination.port"] | default: "" | join: ", " | strip
+              assign user_name = src.user.name | default: src["user.name"] | default: "" | join: ", " | strip
+              assign user_domain = src.user.domain | default: src["user.domain"] | default: "" | join: ", " | strip
+              assign host_name = src.host.name | default: src["host.name"] | default: "" | join: ", " | strip
+              assign severity = src.kibana.alert.severity | default: src["kibana.alert.severity"] | default: "" | join: ", " | strip
+              assign rule_name = src.kibana.alert.rule.name | default: src["kibana.alert.rule.name"] | default: "" | join: ", " | strip
+
+              assign show_with = false
+              if destination_ip != blank or destination_port != blank or file_name != blank or process_name != blank or parent_process_name != blank or source_ip != blank or source_port != blank
+                assign show_with = true
+              endif
+
+              comment
+                Alert-part (matches buildAlertTimelineString)
+              endcomment
+
+              if event_category != blank
+                assign alert_part = event_category
+              else
+                assign alert_part = "alert"
+              endif
+              assign alert_part = alert_part | append: " event"
+
+              if show_with
+                assign alert_part = alert_part | append: " with"
+              endif
+
+              if process_name != blank
+                assign alert_part = alert_part | append: " process " | append: process_name | append: ","
+              endif
+              if parent_process_name != blank
+                assign alert_part = alert_part | append: " parent process " | append: parent_process_name | append: ","
+              endif
+              if file_name != blank
+                assign alert_part = alert_part | append: " file " | append: file_name | append: ","
+              endif
+
+              if source_ip != blank
+                assign alert_part = alert_part | append: " source " | append: source_ip
+              endif
+              if source_port != blank
+                assign alert_part = alert_part | append: ":" | append: source_port | append: ","
+              endif
+
+              if destination_ip != blank
+                assign alert_part = alert_part | append: " destination " | append: destination_ip
+              endif
+              if destination_port != blank
+                assign alert_part = alert_part | append: ":" | append: destination_port | append: ","
+              endif
+
+              if user_name != blank
+                assign alert_part = alert_part | append: " by " | append: user_name
+              endif
+              if host_name != blank
+                assign alert_part = alert_part | append: " on " | append: host_name
+              endif
+
+              if severity != blank
+                assign alert_part = alert_part | append: " created " | append: severity | append: " alert"
+                if rule_name != blank
+                  assign alert_part = alert_part | append: " " | append: rule_name | append: "."
+                else
+                  assign alert_part = alert_part | append: "."
+                endif
+              elsif rule_name != blank
+                assign alert_part = alert_part | append: " " | append: rule_name | append: "."
+              endif
+
+              assign alert_part = alert_part | replace: ",", ", " | normalize_whitespace | strip
+
+              comment
+                Process-part (matches buildProcessTimelineString)
+              endcomment
+
+              assign working_directory = src.process.working_directory | default: src["process.working_directory"] | default: "" | join: ", " | strip
+              assign event_action = src.event.action | default: src["event.action"] | default: "" | join: ", " | strip
+              assign process_executable = src.process.executable | default: src["process.executable"] | default: "" | join: ", " | strip
+              assign proc_name = process_name
+              if proc_name == blank and process_executable != blank
+                assign proc_name = process_executable
+              endif
+
+              assign process_pid = src.process.pid | default: src["process.pid"] | default: ""
+              assign args_joined = src.process.args | default: src["process.args"] | default: "" | join: " " | strip
+              assign process_title = src.process.title | default: src["process.title"] | default: "" | join: " " | strip
+              assign process_exit_code = src.process.exit_code | default: src["process.exit_code"] | default: ""
+              assign parent_pid = src.process.parent.pid | default: src["process.parent.pid"] | default: ""
+              assign ppid = src.process.ppid | default: src["process.ppid"] | default: ""
+              assign outcome = src.event.outcome | default: src["event.outcome"] | default: "" | join: ", " | strip
+              assign sha256 = src.process.hash.sha256 | default: src["process.hash.sha256"] | default: "" | join: ", " | strip
+              assign message = src.message | default: src["message"] | default: "" | join: " " | strip
+
+              assign action = event_action | downcase | strip
+              case action
+                when "fork"
+                  assign action_text = "forked process"
+                when "exec"
+                  assign action_text = "executed process"
+                when "start"
+                  assign action_text = "started process"
+                when "process_started"
+                  assign action_text = "started process"
+                when "creation_event"
+                  assign action_text = "started process"
+                when "creation"
+                  assign action_text = "started process"
+                when "end"
+                  assign action_text = "terminated process"
+                when "termination_event"
+                  assign action_text = "terminated process"
+                when "process_stopped"
+                  assign action_text = "terminated process"
+                when "deletion_event"
+                  assign action_text = "terminated process"
+                else
+                  assign action_text = "process"
+              endcase
+
+              assign has_any_process_details = false
+              if user_name != blank or user_domain != blank or host_name != blank or working_directory != blank or proc_name != blank or process_pid != blank or args_joined != blank or process_title != blank or process_exit_code != blank or parent_process_name != blank or parent_pid != blank or ppid != blank or outcome != blank or sha256 != blank
+                assign has_any_process_details = true
+              endif
+
+              assign process_part = ""
+              if has_any_process_details
+                if user_name != blank
+                  assign process_part = process_part | append: user_name
+                endif
+                if user_domain != blank
+                  if user_name != blank
+                    assign process_part = process_part | append: "\\"
+                  endif
+                  assign process_part = process_part | append: user_domain
+                endif
+
+                if host_name != blank and user_name != blank
+                  assign process_part = process_part | append: "@" | append: host_name
+                elsif host_name != blank
+                  assign process_part = process_part | append: host_name
+                endif
+
+                if working_directory != blank
+                  if process_part != blank
+                    assign process_part = process_part | append: " "
+                  endif
+                  assign process_part = process_part | append: "in " | append: working_directory
+                endif
+
+                if process_part != blank
+                  assign process_part = process_part | append: " "
+                endif
+                assign process_part = process_part | append: action_text
+
+                if proc_name != blank
+                  assign process_part = process_part | append: " " | append: proc_name
+                  if process_pid != blank
+                    assign process_part = process_part | append: " (" | append: process_pid | append: ")"
+                  endif
+                elsif process_pid != blank
+                  assign process_part = process_part | append: " (" | append: process_pid | append: ")"
+                endif
+
+                if args_joined != blank
+                  assign process_part = process_part | append: " " | append: args_joined
+                endif
+                if process_title != blank
+                  assign process_part = process_part | append: " " | append: process_title
+                endif
+
+                if process_exit_code != blank
+                  assign process_part = process_part | append: " with exit code " | append: process_exit_code
+                endif
+
+                if parent_process_name != blank or parent_pid != blank or ppid != blank
+                  assign process_part = process_part | append: " via parent process"
+                  if parent_process_name != blank
+                    assign process_part = process_part | append: " " | append: parent_process_name
+                  endif
+                  if parent_pid != blank
+                    assign process_part = process_part | append: " (" | append: parent_pid | append: ")"
+                  endif
+                  if ppid != blank
+                    assign process_part = process_part | append: " (" | append: ppid | append: ")"
+                  endif
+                endif
+
+                if outcome != blank
+                  assign process_part = process_part | append: " with result " | append: outcome
+                endif
+
+                if sha256 != blank
+                  assign process_part = process_part | append: " " | append: sha256
+                endif
+
+                if message != blank
+                  assign process_part = process_part | append: " " | append: message
+                endif
+              endif
+
+              assign process_part = process_part | replace: ",", ", " | normalize_whitespace | strip
+
+              if process_part != blank and alert_part != blank
+                assign combined = alert_part | append: " " | append: process_part
+              elsif process_part != blank
+                assign combined = process_part
+              else
+                assign combined = alert_part
+              endif
+
+              echo combined | normalize_whitespace | strip
+            -%}
+
+      - name: get_alert_timeline_string
+        type: data.set
+        with:
+          alert_id: '{{ alertId }}'
+          alert_index: '{{ alertIndex }}'
+          timeline_string: '{{ steps.get_alert_timeline_string__build.output.timeline_string }}'
+          attachment_label: '{{ alertIndex }}:{{ alertId }}: {{ steps.get_alert_timeline_string__build.output.timeline_string | truncate: 140 }}'
+          message: 'Generated a Timeline-like string for alert {{ alertId }}.'
+
